@@ -1,2 +1,15 @@
+# Build output
 /target
+
+# Screenshots and videos from scripted runs (see docs/DEVELOPMENT.md)
 /shots
+*.mp4
+*.partial.mp4
+
+# Editors and operating systems
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+Thumbs.db

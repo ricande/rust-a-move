@@ -46,7 +46,7 @@ see [docs/UPSTREAM_FIXES.md](docs/UPSTREAM_FIXES.md).
 
 ## Assets
 
-GRIN has no image or sound files yet: its creatures and effects are drawn
+Rust a move has no image or sound files yet: its creatures and effects are drawn
 in code and covered by the project's license, GPL-3.0-or-later. No Snood
 artwork, sounds, character names or levels are used. (The template's
 example assets were removed.)

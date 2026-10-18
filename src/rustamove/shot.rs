@@ -360,9 +360,9 @@ impl Flight {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::grin::emotion::{Family, FAMILIES};
-    use crate::grin::geometry::Layout;
-    use crate::grin::rng::Rng;
+    use crate::rustamove::emotion::{Family, FAMILIES};
+    use crate::rustamove::geometry::Layout;
+    use crate::rustamove::rng::Rng;
 
     const HEX: Kind = Kind::Ordinary(Family::Hex);
 

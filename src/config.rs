@@ -8,11 +8,11 @@ use std::ffi::OsString;
 /// Shown as the window title and the main menu title, and used for the
 /// data and video folders on Windows and macOS. A product name, the same in
 /// every language.
-pub const APP_NAME: &str = "GRIN";
+pub const APP_NAME: &str = "Rust a move";
 
 /// Lower-case id: the Linux data folder and the prefix of video and
 /// temporary file names.
-pub const APP_ID: &str = "grin";
+pub const APP_ID: &str = "rust-a-move";
 
 /// The longest video the recorder makes, in seconds: 180 is the limit for a
 /// YouTube Short. When a round goes on longer, recording stops there and
@@ -21,7 +21,7 @@ pub const APP_ID: &str = "grin";
 pub const MAX_VIDEO_SECONDS: Option<f64> = Some(180.0);
 
 /// Prefix of the environment variables, e.g. `RUSTYHUSKY_LANG`.
-pub const ENV_PREFIX: &str = "GRIN";
+pub const ENV_PREFIX: &str = "RUST_A_MOVE";
 
 /// The environment variable `<ENV_PREFIX>_<name>`, if set and not empty.
 pub fn env(name: &str) -> Option<OsString> {

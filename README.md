@@ -1,65 +1,121 @@
-# GRIN (working title)
+# Rust a move
 
-GRIN is an original, Snood-inspired portrait aiming-and-matching game with
-grumpy geometric creatures. Shoot a creature into the hanging board; three or
-more of one family disappear and unsupported creatures fall. There is **no
-aiming line**: the creature you are about to hit shows its fear instead. The
-Angry creature is always furious and gives nothing away, its neighbours are
-nervous, and Runners try to escape sideways when a path opens.
+[![CI](https://github.com/ricande/rust-a-move/actions/workflows/ci.yml/badge.svg)](https://github.com/ricande/rust-a-move/actions/workflows/ci.yml)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
+[![Rust 1.87+](https://img.shields.io/badge/Rust-1.87%2B-orange?logo=rust)](Cargo.toml)
+[![Built on RustyHusky](https://img.shields.io/badge/built%20on-RustyHusky%200.3.0-8a2be2)](https://github.com/ricande/RustyHusky)
 
-The name GRIN is provisional. This is a local prototype; nothing has been
-published.
+**Aim with fear. Match with spite.**
 
-**Status:** M2 – shooting range: aiming without a line, fear on the
-predicted first creature, shots with wall bounces that attach locally. No
-matching, falls, blasts, runners or real ending yet (M3–M5); see
-[docs/game/06_IMPLEMENTATION_PLAN.md](docs/game/06_IMPLEMENTATION_PLAN.md).
+*Rust a move* is an original, Snood-inspired portrait aim-and-match game
+with grumpy geometric creatures, written in Rust with
+[Macroquad](https://macroquad.rs). Shoot a creature into the hanging board;
+three or more of one family disappear and whatever no longer hangs from the
+ceiling falls.
 
-GRIN is built on the [RustyHusky](https://github.com/ricande/RustyHusky)
-template 0.3.0 (commit `91c257d8e60ca381768dde0258e04d745a30d184`): portrait
-540 × 960 view, menus, settings, pause, English/Swedish texts and automatic
-1080 × 1920 60 fps gameplay recording via FFmpeg. Changes to the framework
-files are listed in [docs/FRAMEWORK_PATCHES.md](docs/FRAMEWORK_PATCHES.md).
+The twist: **there is no aiming line.** The creature your shot would hit
+first is visibly terrified instead – so you aim by reading faces.
 
-## Starting a round
+- **Angry** is always furious. Aiming at it changes nothing, and it hides
+  everything behind it. Hit it directly and it explodes, taking its
+  neighbours with it – and other Angry ones in the blast go off too.
+- Everyone **next to an Angry** is nervous and keeps a worried eye on it.
+- **Runners** wear a sweatband. When a straight path to the side opens, they
+  struggle free and escape; next to an Angry they bolt at once.
+- Six ordinary families – Round, Block, Diamond, Hex, Triangle and Oval –
+  each with its own shape, colour and personality, all drawn in code.
 
-A round opens a setup screen: **Shooting range (M2)** or **Animation lab
-(M1)** (Up/Down and Space, or the mouse). In both, Enter ends the round.
+![The cast with an aimed, terrified Round; an Angry with its six nervous neighbours; the shooting range with no aiming line; a runner panicking next to an Angry; a chain of Angry blasts](docs/images/screens.png)
 
-## The shooting range (M2)
+## Status
+
+Work in progress, built milestone by milestone
+([implementation plan](docs/game/06_IMPLEMENTATION_PLAN.md),
+[verification record](docs/VERIFICATION.md)):
+
+| Milestone | Content | State |
+| --- | --- | --- |
+| M0 | Project from the RustyHusky template, design docs | done |
+| M1 | Procedural characters and the animation lab | done |
+| M2 | Board, shared shot prediction, fear aiming, shooting range | done |
+| M3 | Matching, falls, score, ceiling pressure, win/lose and retry | next |
+| M4 | Angry blasts and chain reactions | planned |
+| M5 | Runners | planned |
+| M6 | Levels, saved options, tutorial | planned |
+| M7 | Recording and platform review, release candidate | planned |
+
+Today a round opens a setup screen with the **shooting range** (aiming,
+shots, bounces and attachment on test boards – no matching yet) and the
+**animation lab** (every expression and effect, scenario by scenario).
+
+## Quick start
+
+```bash
+git clone https://github.com/ricande/rust-a-move.git
+cd rust-a-move
+cargo run --release
+```
+
+On Debian/Ubuntu, install the build packages first (see
+[Requirements](#requirements)). Choose **Play**, then the shooting range or
+the animation lab.
+
+## Controls
+
+**Setup screen:** Up/Down and Space, or the mouse. In both modes, Enter ends
+the round (results and video) and Esc or P pauses.
+
+**Shooting range (M2)**
 
 | Key / mouse | Action |
 | --- | --- |
-| Mouse, or Left/Right (A/D) held | aim (the keyboard keeps the aim until the mouse really moves) |
+| Mouse, or Left/Right (A/D) held | aim, 10°–170° (the keyboard keeps the aim until the mouse really moves) |
 | Click in the field, or Space | fire |
-| Z / X | previous / next test board (mixed, ceiling gaps, curtain, pocket) |
+| Z / X | previous / next test board: mixed, ceiling gaps, curtain (bank shots), pocket |
 | Up / Down | board size: 8, 6, 12, 18 columns at zoom 100 %, 18 and 6 at 75 % |
-| Esc / P | pause (framework) |
 
-There is no aiming line: the creature the shot would hit first looks
-terrified. Angry gives nothing away. With `GRIN_DEV=1`, S shows the
-colliders and W the predicted shot path (development only).
-`scripts/range_tour.txt` plays through it with screenshots and a video.
-
-## The animation lab (M1)
-
-Keys:
+**Animation lab (M1)**
 
 | Key | Action |
 | --- | --- |
-| Z / X | previous / next scenario |
-| Up / Down | change the scenario's parameter (size, aim, route …) |
-| Left / Right | change playback speed (slow / normal) |
-| Space | trigger the scenario's event (aim on/off, open route, blast …) |
-| D | toggle the collider overlay |
-| A | toggle reduced motion |
-| Enter | finish the round (results and video) |
-| Esc / P | pause (framework) |
+| Z / X | previous / next scenario (eight in all) |
+| Up / Down | the scenario's setting (size, aimed neighbour, route, blast type, width) |
+| Left / Right | slow motion (¼ speed) / normal speed |
+| Space | the scenario's event (aim, restart, pop a blocker, fire) |
+| D | collider overlay |
+| A | reduced motion |
 
-The scenarios follow the animation bible in
-[docs/game/04_CHARACTERS_ANIMATION.md](docs/game/04_CHARACTERS_ANIMATION.md).
+With `RUST_A_MOVE_DEV=1` the range also has development overlays: S shows
+the colliders and W the predicted shot path. Normal play never shows a
+trajectory.
 
-## Template features kept
+## How it is built
+
+- **One shot calculation for fear and flight.** The shot planner traces the
+  projectile with continuous collision (rays against colliders, side-wall
+  reflections) and the same plan decides who is afraid and where the shot
+  stops, so they cannot disagree. Tests compare it with an independent
+  fine-step simulation over 1 200+ random shots.
+- **Deterministic, window-free logic** at a fixed 120 steps per second, with
+  an owned seeded random generator; drawing only reads the state.
+- **Procedural characters:** body shape, face (eyes, pupils, brows, mouth)
+  and motion are blended from moods (nervous, afraid, relieved, panicking),
+  with a reduced-motion mode that keeps every expression.
+- **Hex board:** alternating rows of N and N − 1 cells, six neighbours, one
+  circular collider for every shape; 6–18 columns and 75–100 % zoom.
+
+Details: [architecture](docs/ARCHITECTURE.md), [rules](docs/GAME_RULES.md),
+[technical design](docs/game/03_TECHNICAL_DESIGN.md).
+
+## From the RustyHusky template
+
+Rust a move is built on the [RustyHusky](https://github.com/ricande/RustyHusky)
+template 0.3.0 (commit `91c257d8e60ca381768dde0258e04d745a30d184`), which
+provides the portrait view, menus, settings, pause, English/Swedish texts and
+automatic gameplay recording. Changes to the template's framework files are
+listed in [docs/FRAMEWORK_PATCHES.md](docs/FRAMEWORK_PATCHES.md).
+
+### Template features
 
 - **Portrait 9:16 gameplay** – a logical 540 × 960 view, scaled to any window
   without cropping or stretching, with correct mouse coordinates.
@@ -75,10 +131,9 @@ The scenarios follow the animation bible in
 - **English by default, with i18n support** – all texts go through one
   translation catalog; Swedish is included.
 
-Breakout-style game; its general parts were kept and the Breakout parts
-removed. The framework draws everything in code and synthesizes its sounds;
-a game's images and sounds in `assets/` are built into the program, so it
-needs no files at run time.
+The template grew out of [RustOut](https://github.com/ricande/RustOut), a
+Breakout-style game. It draws everything in code and synthesizes its sounds,
+so the game needs no files at run time.
 
 
 ## Requirements
@@ -100,21 +155,25 @@ needs no files at run time.
 cargo run --release
 ```
 
-Tests (flow, settings, translations, scaling, recording pipeline) run without
-a window; the video tests are skipped when FFmpeg is missing:
+Tests (game rules and geometry, flow, settings, translations, scaling,
+recording pipeline) run without a window; the video tests are skipped when
+FFmpeg is missing:
 
 ```bash
 cargo test
 ```
 
-## Playing
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the full set of checks,
+scripted runs and development mode.
+
+## Menus and flow
 
 | Screen   | Keys / mouse |
 | -------- | ------------ |
 | Menus    | Mouse, or ↑/↓ and Enter (Space also chooses). Esc goes back. |
 | Settings | ←/→ change the focused setting; click the left or right half of the volume button to lower or raise it. |
 | Round    | Esc or P pauses. In the pause menu: Resume (also Esc/P) or Abort round. |
-| Lab      | See [The animation lab](#the-animation-lab-m1). |
+| Game     | See [Controls](#controls). |
 
 Flow: **main menu → round → results → next round or main menu**. An aborted
 round also ends on the results screen (without "Next round").
@@ -133,9 +192,9 @@ A change of recording mode applies from the next round. Files from earlier
 versions with `"recording": true` / `false` are read as Prioritize recording /
 Off; a saved `recording_mode` is always kept.
 
-Data folder: `$XDG_DATA_HOME/rustyhusky` (normally
-`~/.local/share/rustyhusky`) on Linux, `~/Library/Application
-Support/RustyHusky` on macOS, `%APPDATA%\RustyHusky` on Windows. A missing or
+Data folder: `$XDG_DATA_HOME/rust-a-move` (normally
+`~/.local/share/rust-a-move`) on Linux, `~/Library/Application
+Support/Rust a move` on macOS, `%APPDATA%\Rust a move` on Windows. A missing or
 broken file gives the defaults.
 
 ## Video recording
@@ -175,7 +234,7 @@ Both modes:
   encoder finishes, then **Save video** and **Discard video**. Until you save,
   the video is only a temporary file in the system's temp folder. Leaving the
   results screen without saving discards it.
-- **Where:** `~/Videos/RustyHusky/rustyhusky-<date>-<time>.mp4` (UTC; the
+- **Where:** `~/Videos/Rust a move/rust-a-move-<date>-<time>.mp4` (UTC; the
   Linux folder follows `XDG_VIDEOS_DIR`, macOS uses `~/Movies`, Windows
   `%USERPROFILE%\Videos`). Existing files are never overwritten; `-2`, `-3` …
   is added instead. The results screen shows the saved path.
@@ -206,7 +265,7 @@ Both modes:
 
 ## Template updates
 
-GRIN changes some RustyHusky framework files. Do not run
+Rust a move changes some RustyHusky framework files. Do not run
 `scripts/update-framework.sh` blindly: it overwrites them. Follow
 [docs/FRAMEWORK_PATCHES.md](docs/FRAMEWORK_PATCHES.md) and the template's
 [docs/NEW_GAME.md](docs/NEW_GAME.md).
@@ -214,29 +273,33 @@ GRIN changes some RustyHusky framework files. Do not run
 ## Environment variables
 
 Handy for testing without touching your real settings and videos. The
-prefix is `config::ENV_PREFIX` (`GRIN` here):
+prefix is `config::ENV_PREFIX` (`RUST_A_MOVE` here):
 
-| Variable               | Effect                                            |
-| ---------------------- | ------------------------------------------------- |
-| `GRIN_DATA_DIR`        | folder for `settings.json`                        |
-| `GRIN_VIDEO_DIR`       | folder for saved videos                           |
-| `GRIN_LANG`            | `en` or `sv`, overrides the saved language for this run |
-| `GRIN_FFMPEG`          | path to the ffmpeg program (a wrong path simulates missing FFmpeg) |
-| `GRIN_WINDOW`          | force a window size, e.g. `1000x640`              |
-| `GRIN_SCRIPT`          | run a UI script instead of real input (see [AGENTS.md](AGENTS.md)) |
-| `GRIN_SHOTS`           | folder for the script's screenshots (default `shots`) |
+| Variable | Effect |
+| -------- | ------ |
+| `RUST_A_MOVE_DATA_DIR` | folder for `settings.json` |
+| `RUST_A_MOVE_VIDEO_DIR` | folder for saved videos |
+| `RUST_A_MOVE_LANG` | `en` or `sv`, overrides the saved language for this run |
+| `RUST_A_MOVE_FFMPEG` | path to the ffmpeg program (a wrong path simulates missing FFmpeg) |
+| `RUST_A_MOVE_WINDOW` | force a window size, e.g. `1000x640` |
+| `RUST_A_MOVE_SCRIPT` | run a UI script instead of real input (see [AGENTS.md](AGENTS.md)) |
+| `RUST_A_MOVE_SHOTS` | folder for the script's screenshots (default `shots`) |
+| `RUST_A_MOVE_DEV` | `1` turns on development overlays in the shooting range |
 
 ## Documentation
 
 | Document | Contents |
 | -------- | -------- |
+| [docs/GAME_RULES.md](docs/GAME_RULES.md) | The authoritative game rules (R01–R14) |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Modules, coordinates, time step, i18n, recording flow |
-| [docs/GAME_RULES.md](docs/GAME_RULES.md) | GRIN's authoritative game rules |
-| [docs/game/](docs/game/) | GRIN design package: decisions, technical design, characters, configuration, plan, tests, template audit ([Swedish overview](docs/game/README_SV.md)) |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Building, checks, scripted runs, development mode, code tour |
+| [docs/VERIFICATION.md](docs/VERIFICATION.md) | What was verified per milestone, how, and what was not |
+| [docs/game/](docs/game/README.md) | Design package: decisions, technical design, characters and animation, configuration, plan, test specification, template audit |
 | [docs/FRAMEWORK_PATCHES.md](docs/FRAMEWORK_PATCHES.md) | Changes to RustyHusky framework files, to reapply after a template update |
 | [docs/NEW_GAME.md](docs/NEW_GAME.md) | The template's guide to building a game on it |
 | [docs/UPSTREAM_FIXES.md](docs/UPSTREAM_FIXES.md) | The patched miniquad: symptom, cause, verification, how to remove it |
 | [AGENTS.md](AGENTS.md) | Rules and checks for contributors and AI agents |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute |
 | [CHANGELOG.md](CHANGELOG.md) | Changes per version |
 | [LICENSE](LICENSE) | GPL-3.0-or-later |
 | [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) | RustOut (MIT), dependencies, FFmpeg, recorded videos |
@@ -256,7 +319,11 @@ prefix is `config::ENV_PREFIX` (`GRIN` here):
 - In Prioritize gameplay, motion in the video is only as smooth as the
   display's frame rate: at 30 Hz every picture is shown twice. The file is
   60 fps either way.
-- RustyHusky builds against a patched copy of miniquad 0.4.11 in `vendor/`
+- The game is not playable to a win or loss yet (M3); the results screen
+  shows the number of shots as the score.
+- No game-specific sound effects yet: the range uses the template's
+  synthesized sounds.
+- Rust a move builds against a patched copy of miniquad 0.4.11 in `vendor/`
   that fixes black text rectangles (macroquad#1006); see
   [docs/UPSTREAM_FIXES.md](docs/UPSTREAM_FIXES.md). Building it prints one
   or two warnings (depending on the platform) from miniquad's own, unchanged
@@ -268,8 +335,8 @@ prefix is `config::ENV_PREFIX` (`GRIN` here):
 
 ## License
 
-GRIN, like RustyHusky, is free software, licensed under the GNU General Public License,
-version 3 or (at your option) any later version (GPL-3.0-or-later). The full
+Rust a move, like RustyHusky, is free software, licensed under the GNU
+General Public License, version 3 or (at your option) any later version (GPL-3.0-or-later). The full
 text is in [LICENSE](LICENSE).
 
 - Code reused from [RustOut](https://github.com/ricande/RustOut) keeps its
@@ -280,3 +347,6 @@ text is in [LICENSE](LICENSE).
 - Gameplay videos you record are not automatically covered by the code
   license. Separate rights to any assets you use (graphics, music, sounds,
   fonts) still apply.
+- Inspired by the game principle of Snood; no Snood artwork, sounds,
+  character names or levels are used. All creatures are original and drawn
+  in code.

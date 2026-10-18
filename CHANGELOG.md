@@ -1,13 +1,22 @@
 # Changelog
 
-All notable changes to GRIN are documented here.
+All notable changes to Rust a move are documented here.
 
 ## [Unreleased]
+
+### Changed
+
+- The project is named *Rust a move* (id `rust-a-move`, environment prefix
+  `RUST_A_MOVE`); the design package's working title was GRIN. The game
+  module is `src/rustamove/`.
+- Documentation completed and all in English: README, `docs/DEVELOPMENT.md`,
+  `docs/VERIFICATION.md`, `docs/game/README.md` (replacing the Swedish
+  overview), `CONTRIBUTING.md`.
 
 ### Added
 
 - Started from the RustyHusky template 0.3.0.
-- GRIN design package in `docs/game/`; authoritative rules in
+- Design package in `docs/game/`; authoritative rules in
   `docs/GAME_RULES.md`; game-specific agent rules appended to `AGENTS.md`.
 - Character animation lab (M1), opened by a round: eight scenarios covering
   the cast, aimed fear, Angry with nervous neighbours, aiming at Angry (no
@@ -29,7 +38,7 @@ All notable changes to GRIN are documented here.
 - Shared shot planner with continuous collision; tests compare it with a
   fine-step simulation over 1 200+ random shots, mirrored boards, tangent
   and simultaneous contacts, and check that the afraid creature is the one
-  hit. `GRIN_DEV=1` path and collider overlays. `scripts/range_tour.txt`.
+  hit. `RUST_A_MOVE_DEV=1` path and collider overlays. `scripts/range_tour.txt`.
 
 ### Removed
 

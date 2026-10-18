@@ -1,22 +1,24 @@
 # AGENTS.md
 
-Guidance for AI coding agents (and humans) working on GRIN, a game built on
-the RustyHusky template. The template's rules come first; the GRIN-specific
+Guidance for AI coding agents (and humans) working on Rust a move, a game built on
+the RustyHusky template. The template's rules come first; the game-specific
 rules are in the appendix at the end. Read this
 and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before changing code; the
 current game's rules are in [docs/GAME_RULES.md](docs/GAME_RULES.md).
 
 ## Project in one paragraph
 
-RustyHusky is a Rust starter framework for portrait games with automatic
-gameplay recording (for YouTube Shorts, TikTok, Instagram Reels), built with
-Macroquad: a logical 540 × 960 view scaled to the window, main menu,
-settings (language, volume, recording mode), pause and results screens,
-English/Swedish translations and automatic MP4 recording of each round via
-FFmpeg. The game itself is a replaceable module behind the `game::Game`
-trait; `example.rs` is a placeholder. It is a single binary crate; images
-and sounds in `assets/` are embedded with `include_bytes!`. A new game is
-named with `scripts/new-game.sh` (see docs/NEW_GAME.md).
+Rust a move is a portrait aim-and-match game with grumpy geometric
+creatures: no aiming line, the creature about to be hit shows fear instead.
+It is built on RustyHusky, a Rust starter framework for portrait games with
+automatic gameplay recording (for YouTube Shorts, TikTok, Instagram Reels),
+built with Macroquad: a logical 540 × 960 view scaled to the window, main
+menu, settings (language, volume, recording mode), pause and results
+screens, English/Swedish translations and automatic MP4 recording of each
+round via FFmpeg. The game is the module `src/rustamove/` behind the
+`game::Game` trait. It is a single binary crate. Development details are in
+[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md); what has been verified is in
+[docs/VERIFICATION.md](docs/VERIFICATION.md).
 
 ## Commands
 
@@ -87,37 +89,39 @@ the real mouse and keyboard), with temp folders so the user's settings and
 videos are untouched:
 
 ```bash
-GRIN_SCRIPT=scripts/ui_tour.txt GRIN_SHOTS=/tmp/rh/shots \
-GRIN_DATA_DIR=/tmp/rh/data GRIN_VIDEO_DIR=/tmp/rh/videos \
+RUST_A_MOVE_SCRIPT=scripts/range_tour.txt RUST_A_MOVE_SHOTS=/tmp/ram/shots \
+RUST_A_MOVE_DATA_DIR=/tmp/ram/data RUST_A_MOVE_VIDEO_DIR=/tmp/ram/videos \
 cargo run --release
 ```
 
-- `scripts/ui_tour.txt` goes through menu, settings, a round with pause,
+- `scripts/range_tour.txt` and `scripts/lab_tour.txt` tour the game's
+  shooting range and animation lab (see docs/DEVELOPMENT.md).
+- `scripts/ui_tour.txt` (the template's) goes through menu, settings, a round with pause,
   results with Save video, the next round, abort and Discard video, and saves
   numbered screenshots. The command language is at the top of
   `src/script.rs`.
 - Scripts can also hold keys (`hold left` … `release left`), for games
   with movement.
-- `scripts/window_check.txt` with `GRIN_WINDOW=1000x640` checks
+- `scripts/window_check.txt` with `RUST_A_MOVE_WINDOW=1000x640` checks
   letterboxing and the mouse conversion (its clicks are window pixels).
-  Run it with `GRIN_LANG=sv` to check Swedish too.
+  Run it with `RUST_A_MOVE_LANG=sv` to check Swedish too.
 - Check a saved video with
   `ffprobe -v error -show_entries stream=width,height,r_frame_rate,nb_frames -of csv=p=0 <file>`;
   expect `1080,1920,60/1,…` and an AAC stream.
 - Check a hanging encoder with a fake ffmpeg that answers `-encoders` with
   `libx264` and otherwise runs `exec sleep 600`, set via
-  `GRIN_FFMPEG`: the round must go on at full speed and the results
+  `RUST_A_MOVE_FFMPEG`: the round must go on at full speed and the results
   must show the error. Check a slow encoder the same way with a fake that
   reads frames at, say, 30 per second.
 - Check both recording modes: put `{"recording_mode": "recording"}` (or
-  `"gameplay"`) in `settings.json` in `GRIN_DATA_DIR`. To see
-  Prioritize recording wait for a slow encoder, point `GRIN_FFMPEG` at
+  `"gameplay"`) in `settings.json` in `RUST_A_MOVE_DATA_DIR`. To see
+  Prioritize recording wait for a slow encoder, point `RUST_A_MOVE_FFMPEG` at
   a wrapper that passes stdin on to the real ffmpeg at, say, 20 frames per
   second. A saved video must be 60/1 fps with every frame unique
   (`ffmpeg -i f.mp4 -map 0:v -f framemd5 -` and count distinct hashes) and
   as long as its sound track.
-- Check missing FFmpeg with `GRIN_FFMPEG=/nonexistent`, and that no
-  `grin-rec-*` files are left in the temp folder afterwards.
+- Check missing FFmpeg with `RUST_A_MOVE_FFMPEG=/nonexistent`, and that no
+  `rust-a-move-rec-*` files are left in the temp folder afterwards.
 
 Say clearly what you verified by running the program and what only by tests.
 
@@ -139,7 +143,7 @@ Say clearly what you verified by running the program and what only by tests.
   `THIRD_PARTY_NOTICES.md`; when adding a dependency, check that its license
   is compatible with GPLv3 and update the notices if needed.
 
-## Appendix: GRIN game rules for agents
+## Appendix: game-specific rules for agents
 
 These rules add to the template rules above; they do not replace or weaken them. Never copy them into the RustyHusky template itself.
 

@@ -1,6 +1,6 @@
 # Decisions, scope and authority
 
-Version 1.0, 2026-10-18. Working title **GRIN**. This is a specification, not a claim that the software exists.
+Version 1.0, 2026-10-18. Project name **Rust a move** (the design package originally used the working title GRIN). This is a specification; the implementation status is in the README and `docs/VERIFICATION.md`.
 
 ## Status vocabulary
 
@@ -30,7 +30,7 @@ User instructions override this package. For mechanics, `docs/GAME_RULES.md` is 
 
 | ID | Decision and reason |
 | --- | --- |
-| P01 | Working title GRIN. Final name, package id and repository visibility remain OPEN. |
+| P01 | ~~Working title GRIN.~~ **Decided 2026-10-18 by the user:** the project is named *Rust a move* (package id `rust-a-move`, environment prefix `RUST_A_MOVE`), in the public repository `ricande/rust-a-move`. |
 | P02 | Alternating N / N−1 rows, six-neighbour topology. Different visible shapes share a circular collider. |
 | P03 | Six ordinary match families, each identified by both colour and silhouette. |
 | P04 | Angry is a colourless special. Runner is a trait on an ordinary family. A creature cannot be both. |
@@ -58,7 +58,7 @@ User instructions override this package. For mechanics, `docs/GAME_RULES.md` is 
 
 | Choice | Latest useful time | Safe interim choice |
 | --- | --- | --- |
-| Final name / new repo / visibility | Before publishing or naming real user data | Local working folder `grin-prototype`; no public creation. |
+| ~~Final name / new repo / visibility~~ | Decided 2026-10-18 | *Rust a move*, public repository `ricande/rust-a-move`. |
 | Humour and visual palette | Animation lab review | Simple colourful shapes, expressive faces, no copied character artwork. |
 | Explosion size and runner delay | First special-mechanics playtest | Defaults in configuration document. |
 | Pressure: every shot or only misses | Classic-mode playtest | Every five shots; clearly shown counter. |
@@ -75,6 +75,6 @@ Record decisions in a dated log: requirement, old behaviour, new behaviour, reas
 | --- | --- | --- | --- | --- | --- |
 | 2026-10-18 | Snap rule after a creature hit (M2) | "Short snap segment may touch the target but not pass its interior" (open wording) | Candidate cells are at most 60° round the struck creature from the contact direction (one cell step), with the snap path ≥ 2r from every other creature. | Any occupied neighbour within 60° would already overlap the projectile, so the rule always finds the natural cell and never snaps round a creature; no attachment on the far side. Implementation detail, not a rule change. | `shot::tests::attachments_are_local_and_empty`, `blocked_when_no_local_cell_exists`, `simultaneous_contacts_go_to_the_smaller_id` |
 | 2026-10-18 | Simultaneous contacts (M2) | "Creature over wall/ceiling, then stable id; corner order documented" | Creature, then ceiling, then side wall (a wall/ceiling corner stops at the ceiling); creatures by smaller `CreatureId`. Tolerance 1e−7 · diameter. | Fixes the policy the design left to implementation. | `shot::tests::simultaneous_contacts_go_to_the_smaller_id`, `tangent_touch_counts_as_contact` |
-| 2026-10-18 | Pre-game setup screen (P13) | Proposed | A round opens a game-local setup screen: Shooting range (M2) or Animation lab (M1). Clicks and keys there never fire. Width/zoom move here as real options in M6. | Interim until the ordinary game (M3). | `grin::tests::setup_chooses_by_keys_and_never_fires` |
+| 2026-10-18 | Pre-game setup screen (P13) | Proposed | A round opens a game-local setup screen: Shooting range (M2) or Animation lab (M1). Clicks and keys there never fire. Width/zoom move here as real options in M6. | Interim until the ordinary game (M3). | `rustamove::tests::setup_chooses_by_keys_and_never_fires` |
 | 2026-10-18 | M2 shot sounds | WAV SFX proposed | The range uses the framework's synthesized Blip (launch) and Click (bounce, attach) until original WAV SFX arrive in M3/M4. | Keeps M2 to geometry. | – |
-
+| 2026-10-18 | Name and repository | Working title GRIN, local folder only | *Rust a move*, id `rust-a-move`, prefix `RUST_A_MOVE`, public GitHub repository `ricande/rust-a-move`. | User decision. | `config::tests::names_are_consistent` |

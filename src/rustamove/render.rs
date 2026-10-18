@@ -539,7 +539,7 @@ pub fn draw_launcher(v: &View, at: Vec2, dir: Vec2, r: f32, loaded: Option<(Kind
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::grin::emotion::FAMILIES;
+    use crate::rustamove::emotion::FAMILIES;
 
     fn kinds() -> Vec<Kind> {
         FAMILIES

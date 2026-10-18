@@ -1,6 +1,6 @@
 # Game rules
 
-Normative prototype rules for GRIN (working title). CONFIRMED mechanics and PROPOSED defaults are classified in [game/01_DECISIONS.md](game/01_DECISIONS.md). All numbers referenced here are supplied by [game/05_CONFIGURATION_CONTENT.md](game/05_CONFIGURATION_CONTENT.md). Geometry and implementation detail: [game/03_TECHNICAL_DESIGN.md](game/03_TECHNICAL_DESIGN.md); characters and animation: [game/04_CHARACTERS_ANIMATION.md](game/04_CHARACTERS_ANIMATION.md).
+Normative prototype rules for Rust a move. CONFIRMED mechanics and PROPOSED defaults are classified in [game/01_DECISIONS.md](game/01_DECISIONS.md). All numbers referenced here are supplied by [game/05_CONFIGURATION_CONTENT.md](game/05_CONFIGURATION_CONTENT.md). Geometry and implementation detail: [game/03_TECHNICAL_DESIGN.md](game/03_TECHNICAL_DESIGN.md); characters and animation: [game/04_CHARACTERS_ANIMATION.md](game/04_CHARACTERS_ANIMATION.md).
 
 **Implementation status:** M2. R02 (controls), R03 (fear aiming) and R04 (launch, contact, local attachment) work in the shooting range; matching, falls, blasts, runners, pressure and the ending (R05–R13) do not yet. Framework behaviour (pause with Esc/P, results, recording) is described in the README.
 

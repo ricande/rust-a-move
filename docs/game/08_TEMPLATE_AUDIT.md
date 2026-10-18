@@ -28,7 +28,7 @@ Verified commit: `91c257d8e60ca381768dde0258e04d745a30d184`, commit message `Rel
 
 `scripts/update-framework.sh` copies numerous framework files and AGENTS from the template. It will overwrite our proposed changes to game.rs/app.rs/screens.rs/view.rs. It only restores selected mod/ActiveGame lines and four config constants, not arbitrary integrations. Maintain a manual patch ledger and merge carefully.
 
-The audited tree contains `scripts/ui_tour.txt` and `scripts/window_check.txt`, matching the guide references. These are placeholder-game tours, not ready-made tests for GRIN. Replace their game actions in game-owned tour scripts; read the actual script command grammar before generating scripts. Check current filenames with `rg --files scripts` after any template update.
+The audited tree contains `scripts/ui_tour.txt` and `scripts/window_check.txt`, matching the guide references. These are placeholder-game tours, not ready-made tests for this game. Replace their game actions in game-owned tour scripts; read the actual script command grammar before generating scripts. Check current filenames with `rg --files scripts` after any template update.
 
 ## Source links
 

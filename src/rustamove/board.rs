@@ -155,7 +155,7 @@ impl Board {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::grin::emotion::Family;
+    use crate::rustamove::emotion::Family;
 
     #[test]
     fn index_covers_every_cell_once() {

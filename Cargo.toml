@@ -1,9 +1,10 @@
 [package]
-name = "grin"
+name = "rust-a-move"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.87"
-description = "GRIN, built on the RustyHusky template"
+description = "Rust a move: a portrait aim-and-match game with grumpy geometric creatures, built on the RustyHusky template"
+repository = "https://github.com/ricande/rust-a-move"
 license = "GPL-3.0-or-later"
 readme = "README.md"
 publish = false

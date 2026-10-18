@@ -1,4 +1,4 @@
-//! GRIN (working title): a Snood-inspired aiming and matching game with
+//! Rust a move: a Snood-inspired aiming and matching game with
 //! grumpy geometric creatures. See docs/GAME_RULES.md and docs/game/.
 //!
 //! A round starts with a game-local setup screen (rule P13: the template's
@@ -7,7 +7,7 @@
 //! character animation lab (M1, `lab.rs`). Matching and a real ending come
 //! in M3.
 //!
-//! `GRIN_DEV=1` turns on development overlays (colliders, shot path) in the
+//! `RUST_A_MOVE_DEV=1` turns on development overlays (colliders, shot path) in the
 //! range; normal play never shows a trajectory.
 //!
 //! `handle` only records what was pressed; everything changes in `update`,
@@ -213,7 +213,7 @@ enum Mode {
     Lab(Box<lab::Lab>),
 }
 
-pub struct GrinGame {
+pub struct RustAMove {
     level: u32,
     dev: bool,
     mode: Mode,
@@ -226,9 +226,9 @@ pub struct GrinGame {
     done: bool,
 }
 
-impl GrinGame {
-    fn with_dev(level: u32, dev: bool) -> GrinGame {
-        GrinGame {
+impl RustAMove {
+    fn with_dev(level: u32, dev: bool) -> RustAMove {
+        RustAMove {
             level,
             dev,
             mode: Mode::Setup { focus: 0 },
@@ -269,7 +269,7 @@ impl GrinGame {
     }
 
     fn draw_setup(&self, v: &View, focus: usize) {
-        v.text_centered("GRIN", FIELD_W / 2.0, 250.0, 72.0, NEON);
+        v.text_centered(crate::config::APP_NAME, FIELD_W / 2.0, 250.0, 64.0, NEON);
         v.text_centered(t!("menu.subtitle"), FIELD_W / 2.0, 300.0, 22.0, TEXT);
         let labels = [t!("setup.range"), t!("setup.lab")];
         for (i, (rect, label)) in SETUP_BUTTONS.iter().zip(labels).enumerate() {
@@ -280,12 +280,12 @@ impl GrinGame {
     }
 }
 
-impl Game for GrinGame {
+impl Game for RustAMove {
     const TEXTS: &'static [Text] = TEXTS;
 
     fn new(level: u32) -> Self {
         let dev = crate::config::env_str("DEV").as_deref() == Some("1");
-        GrinGame::with_dev(level, dev)
+        RustAMove::with_dev(level, dev)
     }
 
     fn handle(&mut self, input: &Input) {
@@ -386,15 +386,15 @@ mod tests {
         }
     }
 
-    fn lab_game() -> GrinGame {
-        let mut g = GrinGame::with_dev(1, false);
+    fn lab_game() -> RustAMove {
+        let mut g = RustAMove::with_dev(1, false);
         g.handle(&click(SETUP_BUTTONS[1].center()));
         g.update(FIXED_DT);
         assert!(matches!(g.mode, Mode::Lab(_)));
         g
     }
 
-    fn lab(g: &GrinGame) -> &lab::Lab {
+    fn lab(g: &RustAMove) -> &lab::Lab {
         match &g.mode {
             Mode::Lab(l) => l,
             _ => panic!("not in the lab"),
@@ -435,7 +435,7 @@ mod tests {
 
     #[test]
     fn setup_chooses_by_keys_and_never_fires() {
-        let mut g = GrinGame::with_dev(1, false);
+        let mut g = RustAMove::with_dev(1, false);
         g.handle(&press(Key::Down));
         g.update(FIXED_DT);
         assert!(matches!(g.mode, Mode::Setup { focus: 1 }));
@@ -447,7 +447,7 @@ mod tests {
         };
         assert_eq!(r.shots, 0, "the choosing press does not fire");
         // Clicking the range button with the mouse does not fire either.
-        let mut g = GrinGame::with_dev(1, false);
+        let mut g = RustAMove::with_dev(1, false);
         g.handle(&click(SETUP_BUTTONS[0].center()));
         for _ in 0..10 {
             g.update(FIXED_DT);
@@ -457,7 +457,7 @@ mod tests {
         };
         assert_eq!(r.shots, 0);
         // A click beside the buttons does nothing.
-        let mut g = GrinGame::with_dev(1, false);
+        let mut g = RustAMove::with_dev(1, false);
         g.handle(&click(Vec2::new(20.0, 20.0)));
         g.update(FIXED_DT);
         assert!(matches!(g.mode, Mode::Setup { .. }));

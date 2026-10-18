@@ -1,15 +1,15 @@
-# Tour of the GRIN shooting range (M2): fear aiming, shots, bank shots,
+# Tour of the Rust a move shooting range (M2): fear aiming, shots, bank shots,
 # board widths, pause and a saved video. Run with temp folders (see
-# AGENTS.md); add GRIN_DEV=1 to see the shot path overlay, which normal
+# AGENTS.md); add RUST_A_MOVE_DEV=1 to see the shot path overlay, which normal
 # play never shows:
-#   GRIN_SCRIPT=scripts/range_tour.txt GRIN_SHOTS=/tmp/grin/shots \
-#   GRIN_DATA_DIR=/tmp/grin/data GRIN_VIDEO_DIR=/tmp/grin/videos cargo run --release
+#   RUST_A_MOVE_SCRIPT=scripts/range_tour.txt RUST_A_MOVE_SHOTS=/tmp/rust-a-move/shots \
+#   RUST_A_MOVE_DATA_DIR=/tmp/rust-a-move/data RUST_A_MOVE_VIDEO_DIR=/tmp/rust-a-move/videos cargo run --release
 # One frame is 1/60 s; positions are logical (540 x 960).
 
 5     click 270 526   # Play
 13    shot r00-setup
 15    click 270 458   # Shooting range
-17    key w           # shot path overlay (only with GRIN_DEV=1)
+17    key w           # shot path overlay (only with RUST_A_MOVE_DEV=1)
 33    shot r01-aim-up
 34    move 170 330    # aim up-left: the predicted target is afraid
 59    shot r02-aim-left

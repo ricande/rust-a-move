@@ -28,7 +28,7 @@ it and how recording works. For the current game's behaviour, see
 | `main.rs`     |   | Window setup, the frame loop, Macroquad input → `ui::Input`, `ActiveGame`. |
 | `config.rs`   | ✓ | The project's name, id and environment variable prefix. |
 | `game.rs`     | ✓ | The `Game` trait (with the game's `TEXTS` and `SOUNDS`), `RoundResult`, `FIXED_DT`. |
-| `grin/`       | ✓¹ | The GRIN game: `geometry` (layout, cells, neighbours, runner corridors), `board` (occupancy, ids, anchoring), `shot` (shared shot prediction and flight), `rng` (owned seeded generator), `emotion` (moods and poses), `render` (procedural creatures through `View`), `range` (the M2 shooting range), `lab` (the M1 animation lab), `mod.rs` (setup screen and `Game`). See [game/03_TECHNICAL_DESIGN.md](game/03_TECHNICAL_DESIGN.md). |
+| `rustamove/`  | ✓¹ | The game, Rust a move: `geometry` (layout, cells, neighbours, runner corridors), `board` (occupancy, ids, anchoring), `shot` (shared shot prediction and flight), `rng` (owned seeded generator), `emotion` (moods and poses), `render` (procedural creatures through `View`), `range` (the M2 shooting range), `lab` (the M1 animation lab), `mod.rs` (setup screen and `Game`). See [game/03_TECHNICAL_DESIGN.md](game/03_TECHNICAL_DESIGN.md). |
 | `app.rs`      | ✓ | Screens (`Menu`, `Settings`, `Playing`, `Results`), transitions, button layouts, `VideoStatus`. |
 | `screens.rs`  |   | Draws the screens, the pause menu and the REC marker with the recording's length (window only). |
 | `view.rs`     | ✓² | `View` (logical ↔ pixels), colours, drawing helpers including embedded images (`image`), buttons. |
@@ -98,7 +98,7 @@ dropped and cleans up.
 ## Time step
 
 `FIXED_DT` is 1/120 s. Games keep their own clock in `update` (the
-GRIN lab's animation time does), never `get_time()`, so the recording shows what
+game's lab animation time does), never `get_time()`, so the recording shows what
 was played. Script mode uses a fixed frame time of 1/60 s, so runs are
 repeatable. Where the steps come from depends on the recording mode:
 

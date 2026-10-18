@@ -1,7 +1,7 @@
-# Tour of the GRIN character lab (M1): every scenario, screenshots and a
+# Tour of the Rust a move character lab (M1): every scenario, screenshots and a
 # saved video. Run with temp folders (see AGENTS.md):
-#   GRIN_SCRIPT=scripts/lab_tour.txt GRIN_SHOTS=/tmp/grin/shots \
-#   GRIN_DATA_DIR=/tmp/grin/data GRIN_VIDEO_DIR=/tmp/grin/videos cargo run --release
+#   RUST_A_MOVE_SCRIPT=scripts/lab_tour.txt RUST_A_MOVE_SHOTS=/tmp/rust-a-move/shots \
+#   RUST_A_MOVE_DATA_DIR=/tmp/rust-a-move/data RUST_A_MOVE_VIDEO_DIR=/tmp/rust-a-move/videos cargo run --release
 # One frame is 1/60 s; positions are logical (540 x 960).
 
 5     shot 00-menu
