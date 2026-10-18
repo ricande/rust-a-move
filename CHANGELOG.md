@@ -6,6 +6,8 @@ All notable changes to RustyHusky are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-18
+
 ### Added
 
 - Closing the window while a video is being saved waits until it is written,
@@ -184,6 +186,7 @@ The first version of the template, built from the general parts of
   editor and level files, and the save-video dialog (videos are now saved
   with an automatic, unique file name).
 
-[Unreleased]: https://github.com/ricande/RustyHusky/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/ricande/RustyHusky/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/ricande/RustyHusky/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ricande/RustyHusky/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/ricande/RustyHusky/releases/tag/v0.1.0
