@@ -3,8 +3,8 @@
 //! The framework (menus, settings, pause, results, scaling, recording)
 //! drives one round at a time through this trait. A new game implements it
 //! in its own module and is selected with `ActiveGame` in `main.rs`; nothing
-//! else has to change. The template's example game, `example.rs`, is a minimal
-//! implementation.
+//! else has to change. docs/NEW_GAME.md shows how; the template's example
+//! game (`example.rs`, removed in a real game) is a minimal implementation.
 
 use crate::audio::Sfx;
 use crate::i18n::Text;

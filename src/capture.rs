@@ -81,6 +81,11 @@ impl Capture {
         }
     }
 
+    /// A video is being written to its file.
+    pub fn is_saving(&self) -> bool {
+        self.saving.is_some()
+    }
+
     /// Length of the running recording in seconds, if one runs. Shown in
     /// the window only, never drawn into the video.
     pub fn recorded_seconds(&self) -> Option<f64> {

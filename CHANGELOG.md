@@ -8,6 +8,11 @@ All notable changes to RustyHusky are documented here. The format follows
 
 ### Added
 
+- Closing the window while a video is being saved waits until it is written,
+  with a notice; closing it again quits at once. Before, the video was lost.
+- `scripts/update-framework.sh ../RustyHusky` updates a game made from the
+  template to a newer template, keeping the game's own files and lines
+  (see docs/NEW_GAME.md).
 - Videos stop at 3:00, the YouTube Shorts limit (`MAX_VIDEO_SECONDS` in
   `src/config.rs`, `None` for no limit). The game goes on; the window shows
   "Video full (3:00)" and the results explain why the video is shorter. The
@@ -34,6 +39,9 @@ All notable changes to RustyHusky are documented here. The format follows
   kept as it is.
 
 ### Fixed
+
+- `scripts/new-game.sh` wrote "template 0.2.0" into a new game's changelog
+  whatever the template's version was.
 
 Found by building the first game on the template,
 [Husky Bounce](https://github.com/ricande/husky-bounce):

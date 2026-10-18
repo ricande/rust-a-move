@@ -125,6 +125,10 @@ Say clearly what you verified by running the program and what only by tests.
 - Ask before anything hard to undo or outward-facing: pushing, publishing,
   deleting files, or changing things outside the repository.
 - Do not commit build output (`target/`), screenshots or videos.
+- A new framework file (anything a game should get when it updates) must be
+  added to the lists in `scripts/update-framework.sh`; keep game-specific
+  code out of the framework files, and in `main.rs`/`config.rs` only on the
+  lines the script carries over.
 - `vendor/miniquad-0.4.11` is miniquad as published plus the patches in
   `vendor/patches`. Never edit it directly; change it only by adding or
   removing a patch, and keep `scripts/check-vendored-miniquad.sh` passing.

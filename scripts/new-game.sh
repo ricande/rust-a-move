@@ -7,6 +7,7 @@
 set -eu
 cd "$(dirname "$0")/.."
 name=${1:?usage: $0 "Game Name"}
+template_version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
 # "My Game" -> id "my-game", prefix "MY_GAME"
 id=$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]\{1,\}/-/g; s/^-//; s/-$//')
 prefix=$(printf '%s' "$id" | tr '[:lower:]-' '[:upper:]_')
@@ -36,7 +37,7 @@ All notable changes to $name are documented here.
 
 ### Added
 
-- Started from the RustyHusky template 0.2.0.
+- Started from the RustyHusky template $template_version.
 EOT
 
 cat > docs/GAME_RULES.md <<EOT

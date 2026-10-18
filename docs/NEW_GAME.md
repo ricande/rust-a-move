@@ -122,6 +122,24 @@ at the volume setting and mixed into the video at the time it happened. The
 example game plays `assets/chime.wav` on every fifth point. The framework's
 own synthesized sounds (`Sfx::Blip` …) can be used too.
 
+## Updating to a newer template
+
+When RustyHusky gets fixes or features, check out the template at the new
+version next to your game and run, in your game:
+
+```bash
+./scripts/update-framework.sh ../RustyHusky
+```
+
+It copies the framework's files and keeps yours (your game module,
+`assets/`, README, CHANGELOG, rules). In `src/main.rs` and `src/config.rs`
+it takes the template's version and puts back your `mod` lines and
+`ActiveGame`, and your name, id, prefix and video limit. Then it runs fmt,
+clippy and the tests and lists the files to compare by hand (`Cargo.toml`,
+`THIRD_PARTY_NOTICES.md`). Review `git diff` and note the update in your
+CHANGELOG. [Husky Bounce](https://github.com/ricande/husky-bounce) was
+updated this way.
+
 ## Not in the template yet
 
 Background music (long sounds work, but there is no looping or music

@@ -142,6 +142,14 @@ fn draw_pause<G>(app: &App<G>, v: &View, pointer: Option<Vec2>) {
     v.text_centered(t!("pause.help"), cx, 640.0, 20.0, TEXT);
 }
 
+/// Shown while the window waits for a video to be saved before it closes.
+pub fn draw_closing(v: &View) {
+    dim(v, 0.7);
+    let cx = FIELD_W / 2.0;
+    v.text_centered(t!("video.status_saving"), cx, 440.0, 34.0, ACCENT);
+    v.text_wrapped_centered(t!("app.closing"), 490.0, 20.0, TEXT);
+}
+
 /// `m:ss`.
 fn clock(seconds: f64) -> String {
     let whole = seconds.max(0.0) as u64;

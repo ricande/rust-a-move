@@ -126,6 +126,8 @@ async fn main() {
     let mut accumulator = 0.0;
     let mut time = 0.0;
     let mut frame_number = 0u32;
+    // Quitting was asked for while a video is being saved.
+    let mut closing = false;
 
     loop {
         frame_number += 1;
@@ -188,7 +190,11 @@ async fn main() {
         let recording = capture.recorded_seconds();
         screens::draw(&app, &view, input.pointer, recording, waiting, time);
 
-        let mut quit = app.quit || is_quit_requested();
+        if closing {
+            screens::draw_closing(&view);
+        }
+        let close_clicked = is_quit_requested();
+        let mut quit = app.quit || close_clicked;
         if let Some(f) = &scripted {
             for name in &f.shots {
                 save_shot(name);
@@ -198,8 +204,18 @@ async fn main() {
                 .is_some_and(|s| frame_number > s.last_frame());
             quit |= f.quit || past_end;
         }
-        if quit {
-            break;
+        // A video being saved would be lost: the window waits until it is
+        // written (saving has its own time limit). Closing it again quits
+        // at once.
+        if closing {
+            if !capture.is_saving() || close_clicked {
+                break;
+            }
+        } else if quit {
+            if !capture.is_saving() {
+                break;
+            }
+            closing = true;
         }
         next_frame().await;
     }

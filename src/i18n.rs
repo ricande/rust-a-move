@@ -143,6 +143,7 @@ const CATALOG: &[Text] = &[
     ("pause.resume", "Resume", "Fortsätt"),
     ("pause.abort", "Abort round", "Avbryt omgången"),
     ("pause.help", "Esc or P: resume", "Esc eller P: fortsätt"),
+    ("app.closing", "The window closes when the video is saved. Close it again to quit now; the video is then lost.", "Fönstret stängs när videon är sparad. Stäng igen för att avsluta direkt; då går videon förlorad."),
     ("hud.rec", "REC {time}", "REC {time}"),
     ("hud.rec_limit", "REC {time} / {max}", "REC {time} / {max}"),
     ("hud.video_full", "Video full ({max})", "Videon full ({max})"),
