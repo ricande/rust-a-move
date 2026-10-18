@@ -1,0 +1,91 @@
+# Tour of the GRIN character lab (M1): every scenario, screenshots and a
+# saved video. Run with temp folders (see AGENTS.md):
+#   GRIN_SCRIPT=scripts/lab_tour.txt GRIN_SHOTS=/tmp/grin/shots \
+#   GRIN_DATA_DIR=/tmp/grin/data GRIN_VIDEO_DIR=/tmp/grin/videos cargo run --release
+# One frame is 1/60 s; positions are logical (540 x 960).
+
+5     shot 00-menu
+10    click 270 526   # Play
+35    shot 01-cast
+36    key down        # radius 60
+51    shot 02-cast-big
+52    key space       # aim at Round
+70    shot 03-cast-aim-round
+71    key space
+72    key space
+73    key space
+74    key space
+75    key space
+76    key space
+77    key space       # aim at Angry
+95    shot 04-cast-aim-angry
+96    key up
+97    key up
+98    key up
+99    key up
+100   key up
+115   shot 05-cast-smallest
+116   key x           # one target, colliders on
+136   shot 06-target
+137   key space       # aim on
+152   shot 07-target-aimed
+153   key space       # aim off: relief
+158   shot 08-target-relief
+159   key d           # colliders off
+160   key x           # Angry ring
+185   shot 09-ring
+186   key up          # aim neighbour 1
+206   shot 10-ring-aim1
+207   key up
+208   key up          # neighbour 3
+228   shot 11-ring-aim3
+229   key x           # aiming at Angry
+254   shot 12-angry-aimed
+255   key space       # aim off
+275   shot 13-angry-free
+276   key x           # runner routes (boxed)
+301   shot 14-routes-boxed
+302   key up          # left open
+322   shot 15-runner-struggle-left
+349   shot 16-runner-escape-left
+350   key p           # pause mid-struggle
+360   shot 17-paused
+390   key p
+391   key up          # right open
+411   shot 18-runner-struggle-right
+412   key up          # both open
+432   shot 19-runner-both
+492   key x           # runner next to Angry
+532   shot 20-panic-blocked
+533   key space       # pop the blocker
+536   shot 21-panic-escape
+596   key x           # blasts (direct)
+621   shot 22-blast-before
+622   key space
+624   shot 23-blast-smile
+630   shot 24-blast-burst
+648   shot 25-blast-fall
+698   shot 26-ending-hold
+758   key up          # chain
+768   key space
+777   shot 27-chain-wave
+785   shot 28-chain-wave3
+905   key up          # match and fall
+915   key space
+919   shot 29-pop
+937   shot 30-match-fall
+1047  key x           # widths (6 columns)
+1072  shot 31-width-6
+1073  key up          # 18 columns
+1098  shot 32-width-18
+1099  key up          # 18 columns, zoom 75%
+1124  shot 33-width-18-75
+1125  key a           # reduced motion
+1150  shot 34-reduced-motion
+1151  key left        # slow motion
+1171  shot 35-slow
+1172  key enter       # finish
+1232  shot 36-results
+1233  click 152 586   # Save video
+1353  shot 37-saved
+1354  quit

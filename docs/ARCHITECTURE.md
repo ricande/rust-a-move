@@ -28,7 +28,7 @@ it and how recording works. For the current game's behaviour, see
 | `main.rs`     |   | Window setup, the frame loop, Macroquad input → `ui::Input`, `ActiveGame`. |
 | `config.rs`   | ✓ | The project's name, id and environment variable prefix. |
 | `game.rs`     | ✓ | The `Game` trait (with the game's `TEXTS` and `SOUNDS`), `RoundResult`, `FIXED_DT`. |
-| `example.rs`  | ✓¹ | The placeholder game ("Your game here", an image, its own sound, hover). Replace it. |
+| `grin/`       | ✓¹ | The GRIN game: `geometry` (layout, cells, neighbours, runner corridors), `emotion` (moods and poses), `render` (procedural creatures through `View`), `lab` (the M1 animation lab). See [game/03_TECHNICAL_DESIGN.md](game/03_TECHNICAL_DESIGN.md). |
 | `app.rs`      | ✓ | Screens (`Menu`, `Settings`, `Playing`, `Results`), transitions, button layouts, `VideoStatus`. |
 | `screens.rs`  |   | Draws the screens, the pause menu and the REC marker with the recording's length (window only). |
 | `view.rs`     | ✓² | `View` (logical ↔ pixels), colours, drawing helpers including embedded images (`image`), buttons. |
@@ -92,13 +92,13 @@ dropped and cleans up.
   `View::fit(1080, 1920)`, i.e. scale 2 with no bars. Drawing code is shared,
   so the video shows exactly the game view.
 - Buttons are defined once (`app::menu_buttons`, `settings_buttons`,
-  `pause_buttons`, `results_buttons`, `example::FINISH_BUTTON`) and used by
+  `pause_buttons`, `results_buttons`, and the game's own) and used by
   both input and drawing.
 
 ## Time step
 
 `FIXED_DT` is 1/120 s. Games keep their own clock in `update` (the
-example's moving dot does), never `get_time()`, so the recording shows what
+GRIN lab's animation time does), never `get_time()`, so the recording shows what
 was played. Script mode uses a fixed frame time of 1/60 s, so runs are
 repeatable. Where the steps come from depends on the recording mode:
 

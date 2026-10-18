@@ -1,6 +1,8 @@
 # AGENTS.md
 
-Guidance for AI coding agents (and humans) working on RustyHusky. Read this
+Guidance for AI coding agents (and humans) working on GRIN, a game built on
+the RustyHusky template. The template's rules come first; the GRIN-specific
+rules are in the appendix at the end. Read this
 and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before changing code; the
 current game's rules are in [docs/GAME_RULES.md](docs/GAME_RULES.md).
 
@@ -85,8 +87,8 @@ the real mouse and keyboard), with temp folders so the user's settings and
 videos are untouched:
 
 ```bash
-RUSTYHUSKY_SCRIPT=scripts/ui_tour.txt RUSTYHUSKY_SHOTS=/tmp/rh/shots \
-RUSTYHUSKY_DATA_DIR=/tmp/rh/data RUSTYHUSKY_VIDEO_DIR=/tmp/rh/videos \
+GRIN_SCRIPT=scripts/ui_tour.txt GRIN_SHOTS=/tmp/rh/shots \
+GRIN_DATA_DIR=/tmp/rh/data GRIN_VIDEO_DIR=/tmp/rh/videos \
 cargo run --release
 ```
 
@@ -96,26 +98,26 @@ cargo run --release
   `src/script.rs`.
 - Scripts can also hold keys (`hold left` … `release left`), for games
   with movement.
-- `scripts/window_check.txt` with `RUSTYHUSKY_WINDOW=1000x640` checks
+- `scripts/window_check.txt` with `GRIN_WINDOW=1000x640` checks
   letterboxing and the mouse conversion (its clicks are window pixels).
-  Run it with `RUSTYHUSKY_LANG=sv` to check Swedish too.
+  Run it with `GRIN_LANG=sv` to check Swedish too.
 - Check a saved video with
   `ffprobe -v error -show_entries stream=width,height,r_frame_rate,nb_frames -of csv=p=0 <file>`;
   expect `1080,1920,60/1,…` and an AAC stream.
 - Check a hanging encoder with a fake ffmpeg that answers `-encoders` with
   `libx264` and otherwise runs `exec sleep 600`, set via
-  `RUSTYHUSKY_FFMPEG`: the round must go on at full speed and the results
+  `GRIN_FFMPEG`: the round must go on at full speed and the results
   must show the error. Check a slow encoder the same way with a fake that
   reads frames at, say, 30 per second.
 - Check both recording modes: put `{"recording_mode": "recording"}` (or
-  `"gameplay"`) in `settings.json` in `RUSTYHUSKY_DATA_DIR`. To see
-  Prioritize recording wait for a slow encoder, point `RUSTYHUSKY_FFMPEG` at
+  `"gameplay"`) in `settings.json` in `GRIN_DATA_DIR`. To see
+  Prioritize recording wait for a slow encoder, point `GRIN_FFMPEG` at
   a wrapper that passes stdin on to the real ffmpeg at, say, 20 frames per
   second. A saved video must be 60/1 fps with every frame unique
   (`ffmpeg -i f.mp4 -map 0:v -f framemd5 -` and count distinct hashes) and
   as long as its sound track.
-- Check missing FFmpeg with `RUSTYHUSKY_FFMPEG=/nonexistent`, and that no
-  `rustyhusky-rec-*` files are left in the temp folder afterwards.
+- Check missing FFmpeg with `GRIN_FFMPEG=/nonexistent`, and that no
+  `grin-rec-*` files are left in the temp folder afterwards.
 
 Say clearly what you verified by running the program and what only by tests.
 
@@ -136,3 +138,24 @@ Say clearly what you verified by running the program and what only by tests.
 - The project is GPL-3.0-or-later. Keep `LICENSES/MIT-RustOut.txt` and
   `THIRD_PARTY_NOTICES.md`; when adding a dependency, check that its license
   is compatible with GPLv3 and update the notices if needed.
+
+## Appendix: GRIN game rules for agents
+
+These rules add to the template rules above; they do not replace or weaken them. Never copy them into the RustyHusky template itself.
+
+1. Read the game specification and decision statuses before changes. Confirmed behaviour takes priority over implementation convenience. Numerical defaults are proposed and centrally configurable.
+2. Game logic, renderer, options, levels and emotion code live in the game module. Framework flow stays generic; Angry and Runner must never appear in recorder/menu framework code.
+3. The authoritative mechanical specification is docs/GAME_RULES.md after installation; detailed project docs live in docs/game/. Update links when relocating package files. Preserve the original template's architecture/new-game docs as framework documentation.
+4. Simulation advances only in fixed update. Input handling captures intent; drawing is pure. Use separate owned gameplay/cosmetic randomness. No system clock, draw-time mutation or global random state in game behaviour.
+5. Prediction and flight share first-contact calculation. Cosmetics do not change colliders. Do not add a visible trajectory line to normal gameplay to mask a targeting defect.
+6. Resolve chained explosions on one snapshot before support removal; score each id once. Test runner/Angry/shot order, not just each mechanic alone.
+7. Maintain FRAMEWORK_PATCHES.md for outcome/retry and View changes. Do not run template update scripts blindly over game-specific integration patches or this appendix.
+8. Preserve upstream licenses, retained MIT attribution and vendored patch process. All visuals/sounds/levels must be original or have recorded compatible licenses. Do not copy Snood assets or character roster.
+9. Required fmt/clippy/tests and vendored checks must pass for implementation milestones; real drawing/video changes also need actual graphical evidence. Mark unavailable checks NOT RUN.
+10. Keep documentation accurate: rules, architecture, README, changelog, decision log and patch ledger. A game rule change must not be hidden inside a bug fix.
+11. Use isolated test data/video directories. Do not alter Richard's normal settings to run automation.
+12. Remain in authorized local work. Do not publish/push/create remote repositories or perform irreversible operations without applicable user authorization. Do not ask repeatedly for actions already authorized.
+
+### State at delivery of the design package
+
+Documentation complete; implementation not begun here. RustyHusky audited read-only at 0.3.0 / 91c257d8e60ca381768dde0258e04d745a30d184. No gameplay, animation, performance or platform test is preapproved as passing. First implementation assignment was M0–M1 (see docs/game/06_IMPLEMENTATION_PLAN.md).

@@ -107,6 +107,55 @@ impl View {
         );
     }
 
+    /// The window (or video) pixel of a logical position.
+    fn pixel(self, p: Vec2) -> Vec2 {
+        vec2(self.ox + p.x * self.scale, self.oy + p.y * self.scale)
+    }
+
+    /// Fills a polygon that is star-shaped around `centre` (every point of
+    /// `rim` can be seen from it, as in any convex polygon around an inside
+    /// point), as a fan of triangles. `rim` goes round once, either way.
+    #[allow(dead_code)] // Part of the game API; not every game uses it.
+    pub fn fan(&self, centre: Vec2, rim: &[Vec2], color: Color) {
+        let c = self.pixel(centre);
+        for (i, &a) in rim.iter().enumerate() {
+            let b = rim[(i + 1) % rim.len()];
+            draw_triangle(c, self.pixel(a), self.pixel(b), color);
+        }
+    }
+
+    /// Fills an ellipse with radii `rx`, `ry`, turned by `angle` radians.
+    #[allow(dead_code)] // Part of the game API; not every game uses it.
+    pub fn ellipse(&self, centre: Vec2, rx: f32, ry: f32, angle: f32, color: Color) {
+        let segments = ellipse_segments(rx.max(ry) * self.scale);
+        self.fan(
+            centre,
+            &ellipse_points(centre, rx, ry, angle, segments),
+            color,
+        );
+    }
+
+    /// Connected line segments through `points`, with round joints so a
+    /// thick line has no gaps where it bends.
+    #[allow(dead_code)] // Part of the game API; not every game uses it.
+    pub fn polyline(&self, points: &[Vec2], thick: f32, color: Color) {
+        for pair in points.windows(2) {
+            self.line(pair[0], pair[1], thick, color);
+        }
+        if points.len() > 2 {
+            for &p in &points[1..points.len() - 1] {
+                self.circle(p, thick / 2.0, color);
+            }
+        }
+    }
+
+    /// The outline of a circle.
+    #[allow(dead_code)] // Part of the game API; not every game uses it.
+    pub fn circle_lines(&self, p: Vec2, r: f32, thick: f32, color: Color) {
+        let t = self.pixel(p);
+        draw_circle_lines(t.x, t.y, r * self.scale, thick * self.scale, color);
+    }
+
     /// Draws an image file (PNG, JPEG …) into the logical rectangle `x`, `y`,
     /// `w`, `h`, tinted by `color` (`WHITE` keeps its colours). `bytes` is the
     /// file, usually `include_bytes!("../assets/…")`, so the game needs no
@@ -176,6 +225,24 @@ impl View {
         }
         y
     }
+}
+
+/// Points on an ellipse with radii `rx`, `ry` around `centre`, turned by
+/// `angle` radians, going round once from the end of the turned x axis.
+pub fn ellipse_points(centre: Vec2, rx: f32, ry: f32, angle: f32, segments: usize) -> Vec<Vec2> {
+    let (sin, cos) = angle.sin_cos();
+    (0..segments)
+        .map(|i| {
+            let a = i as f32 / segments as f32 * std::f32::consts::TAU;
+            let (x, y) = (rx * a.cos(), ry * a.sin());
+            centre + vec2(x * cos - y * sin, x * sin + y * cos)
+        })
+        .collect()
+}
+
+/// Enough segments for a smooth ellipse whose larger radius is `pixels`.
+fn ellipse_segments(pixels: f32) -> usize {
+    ((pixels * 0.8) as usize).clamp(12, 64)
 }
 
 /// Splits text into lines of at most `width` characters.
@@ -298,6 +365,37 @@ mod tests {
         // A window twice the logical size: positions halve.
         let v = View::fit(1080.0, 1920.0);
         assert_eq!(v.to_field((540.0, 1000.0)), vec2(270.0, 500.0));
+    }
+
+    #[test]
+    fn drawing_maps_logical_points_like_the_pointer() {
+        for (sw, sh) in [(1920.0, 1080.0), (1080.0, 1920.0), (540.0, 1200.0)] {
+            let v = View::fit(sw, sh);
+            for p in [vec2(0.0, 0.0), vec2(270.0, 480.0), vec2(540.0, 960.0)] {
+                let back = v.to_field((v.pixel(p).x, v.pixel(p).y));
+                assert!((back - p).length() < 1e-3, "{p} in {sw}x{sh}");
+            }
+        }
+        // The video frame is twice the logical field, with no offset.
+        let video = View::fit(1080.0, 1920.0);
+        assert_eq!(video.pixel(vec2(10.0, 20.0)), vec2(20.0, 40.0));
+    }
+
+    #[test]
+    fn ellipse_points_lie_on_the_turned_ellipse() {
+        let c = vec2(100.0, 50.0);
+        let pts = ellipse_points(c, 20.0, 10.0, std::f32::consts::FRAC_PI_2, 16);
+        assert_eq!(pts.len(), 16);
+        // Turned a quarter: the long axis is vertical.
+        assert!((pts[0] - vec2(100.0, 70.0)).length() < 1e-3);
+        assert!((pts[4] - vec2(90.0, 50.0)).length() < 1e-3);
+        for p in pts {
+            let d = p - c;
+            // Back in the ellipse's own axes: (d.y / 20)² + (d.x / 10)² = 1.
+            assert!(((d.y / 20.0).powi(2) + (d.x / 10.0).powi(2) - 1.0).abs() < 1e-4);
+        }
+        assert_eq!(ellipse_segments(1.0), 12);
+        assert_eq!(ellipse_segments(1000.0), 64);
     }
 
     #[test]

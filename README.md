@@ -1,20 +1,44 @@
-# RustyHusky
+# GRIN (working title)
 
-[![CI](https://github.com/ricande/RustyHusky/actions/workflows/ci.yml/badge.svg)](https://github.com/ricande/RustyHusky/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/ricande/RustyHusky)](https://github.com/ricande/RustyHusky/releases)
-[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
-[![Rust 1.87+](https://img.shields.io/badge/Rust-1.87%2B-orange?logo=rust)](Cargo.toml)
-[![CI platforms: Linux, Windows, macOS](https://img.shields.io/badge/CI-Linux%20%7C%20Windows%20%7C%20macOS-blue)](.github/workflows/ci.yml)
+GRIN is an original, Snood-inspired portrait aiming-and-matching game with
+grumpy geometric creatures. Shoot a creature into the hanging board; three or
+more of one family disappear and unsupported creatures fall. There is **no
+aiming line**: the creature you are about to hit shows its fear instead. The
+Angry creature is always furious and gives nothing away, its neighbours are
+nervous, and Runners try to escape sideways when a path opens.
 
-[![Video: 1080 × 1920 at 60 fps](https://img.shields.io/badge/video-1080%20%C3%97%201920%20%40%2060%20fps-red)](#video-recording)
-[![Portrait 9:16](https://img.shields.io/badge/portrait-9%3A16-purple)](#video-recording)
-[![Use this template](https://img.shields.io/badge/GitHub-Use%20this%20template-2ea44f?logo=github)](https://github.com/new?template_name=RustyHusky&template_owner=ricande)
+The name GRIN is provisional. This is a local prototype; nothing has been
+published.
 
-**Build. Play. Record. Share.**
+**Status:** M1 – procedural character animation lab. The playable game
+(M2–M7) is not built yet; see
+[docs/game/06_IMPLEMENTATION_PLAN.md](docs/game/06_IMPLEMENTATION_PLAN.md).
 
-RustyHusky is a Rust starter framework for creating portrait games and
-recording gameplay videos for social media platforms such as YouTube Shorts,
-TikTok, and Instagram Reels. Build a game, play it, record it, and share it.
+GRIN is built on the [RustyHusky](https://github.com/ricande/RustyHusky)
+template 0.3.0 (commit `91c257d8e60ca381768dde0258e04d745a30d184`): portrait
+540 × 960 view, menus, settings, pause, English/Swedish texts and automatic
+1080 × 1920 60 fps gameplay recording via FFmpeg. Changes to the framework
+files are listed in [docs/FRAMEWORK_PATCHES.md](docs/FRAMEWORK_PATCHES.md).
+
+## The animation lab (M1)
+
+Starting a round opens the character lab. Keys:
+
+| Key | Action |
+| --- | --- |
+| Z / X | previous / next scenario |
+| Up / Down | change the scenario's parameter (size, aim, route …) |
+| Left / Right | change playback speed (slow / normal) |
+| Space | trigger the scenario's event (aim on/off, open route, blast …) |
+| D | toggle the collider overlay |
+| A | toggle reduced motion |
+| Enter | finish the round (results and video) |
+| Esc / P | pause (framework) |
+
+The scenarios follow the animation bible in
+[docs/game/04_CHARACTERS_ANIMATION.md](docs/game/04_CHARACTERS_ANIMATION.md).
+
+## Template features kept
 
 - **Portrait 9:16 gameplay** – a logical 540 × 960 view, scaled to any window
   without cropping or stretching, with correct mouse coordinates.
@@ -30,24 +54,11 @@ TikTok, and Instagram Reels. Build a game, play it, record it, and share it.
 - **English by default, with i18n support** – all texts go through one
   translation catalog; Swedish is included.
 
-![Main menu, a round with the REC marker, the pause menu and the results with Save video / Discard video](docs/images/screens.png)
-
-*Main menu, the placeholder game while recording, the pause menu (never part
-of the video) and the results with Save video / Discard video.*
-
-RustyHusky creates video files that you publish yourself. It does not upload
-anything to social media platforms.
-
-Built with [Macroquad](https://macroquad.rs). It also has a main menu (Play,
-Settings, Quit), settings for language, volume and recording that are saved
-between runs, a fixed simulation time step, and a placeholder game that shows
-"Your game here", to be replaced by yours.
-
-The framework grew out of [RustOut](https://github.com/ricande/RustOut), a
 Breakout-style game; its general parts were kept and the Breakout parts
 removed. The framework draws everything in code and synthesizes its sounds;
 a game's images and sounds in `assets/` are built into the program, so it
 needs no files at run time.
+
 
 ## Requirements
 
@@ -82,7 +93,7 @@ cargo test
 | Menus    | Mouse, or ↑/↓ and Enter (Space also chooses). Esc goes back. |
 | Settings | ←/→ change the focused setting; click the left or right half of the volume button to lower or raise it. |
 | Round    | Esc or P pauses. In the pause menu: Resume (also Esc/P) or Abort round. |
-| Example  | Space: +1 point (every fifth plays the game's own sound). Enter or the **Finish level** button: finish the level. |
+| Lab      | See [The animation lab](#the-animation-lab-m1). |
 
 Flow: **main menu → round → results → next round or main menu**. An aborted
 round also ends on the results screen (without "Next round").
@@ -172,78 +183,37 @@ Both modes:
   Leftovers after a crash are removed at the next start once they are a day
   old.
 
-## Building your own game
+## Template updates
 
-Start a new repository from this one: **Use this template** on GitHub, or
-
-```bash
-gh repo create my-game --template ricande/RustyHusky --public --clone
-```
-
-The new repository gets all files but none of the history. Run
-`./scripts/new-game.sh "My Game"` to name it (it does step 1 below and
-resets the changelog); [docs/NEW_GAME.md](docs/NEW_GAME.md) walks through
-the rest. In short:
-
-1. Name your project in `src/config.rs` (`APP_NAME`, `APP_ID`,
-   `ENV_PREFIX`) and in `Cargo.toml`. The window title, menu title, data and
-   video folders, file names and environment variables follow.
-2. Create a module, e.g. `src/mygame.rs`, with a type that implements
-   `game::Game` (see `src/game.rs` and the example in `src/example.rs`):
-   - `TEXTS` – the game's own texts as (key, English, Swedish); must include
-     `menu.subtitle`, the line under the title in the main menu
-   - `new(level)` – start a round (level 1, 2, 3 … with "Next round")
-   - `handle(&Input)` – once per frame: pressed and held keys, mouse position
-     and clicks, all in logical coordinates (Esc/P are taken for pausing)
-   - `update(dt)` – game logic with the fixed step `FIXED_DT` (1/120 s)
-   - `draw(&View)` – draw in logical 540 × 960 coordinates through `View`,
-     including images from `assets/` with `View::image`
-   - `SOUNDS` – your own WAV files (optional), played with `Sfx::Game(n)`
-     and mixed into the video
-   - `take_sounds()` – sound effects started since the last call
-   - `finished()` – `Some(RoundResult { score })` when the level is done
-3. Add `mod mygame;` and set `type ActiveGame = mygame::MyGame;` in
-   `src/main.rs`.
-4. Show every text through `t!("key")` with the key in your `TEXTS`.
-   `cargo test` fails if a key is missing or the languages' placeholders
-   differ.
-5. Need another key? Add a variant to `ui::Key` and one row to `ui::KEYS`.
-   Another sound? Add a WAV file to `Game::SOUNDS`
-   (see [docs/NEW_GAME.md](docs/NEW_GAME.md)).
-6. Delete `src/example.rs` and describe your rules in
-   [docs/GAME_RULES.md](docs/GAME_RULES.md).
-
-Menus, settings, pause, results, scaling, recording and translations of the
-framework's texts need no changes.
-
-Also start a fresh `CHANGELOG.md` and rewrite `docs/GAME_RULES.md` and the
-README for your game. RustyHusky is GPL-3.0-or-later: a game that contains
-its code and is shared with others must be released under the GPL as well.
-Keep `LICENSE`, `LICENSES/` and `THIRD_PARTY_NOTICES.md`, and add the
-licenses of your own assets. Videos you record are not covered by the code license.
+GRIN changes some RustyHusky framework files. Do not run
+`scripts/update-framework.sh` blindly: it overwrites them. Follow
+[docs/FRAMEWORK_PATCHES.md](docs/FRAMEWORK_PATCHES.md) and the template's
+[docs/NEW_GAME.md](docs/NEW_GAME.md).
 
 ## Environment variables
 
 Handy for testing without touching your real settings and videos. The
-prefix is `config::ENV_PREFIX` (`RUSTYHUSKY` here):
+prefix is `config::ENV_PREFIX` (`GRIN` here):
 
 | Variable               | Effect                                            |
 | ---------------------- | ------------------------------------------------- |
-| `RUSTYHUSKY_DATA_DIR`  | folder for `settings.json`                        |
-| `RUSTYHUSKY_VIDEO_DIR` | folder for saved videos                           |
-| `RUSTYHUSKY_LANG`      | `en` or `sv`, overrides the saved language for this run |
-| `RUSTYHUSKY_FFMPEG`    | path to the ffmpeg program (a wrong path simulates missing FFmpeg) |
-| `RUSTYHUSKY_WINDOW`    | force a window size, e.g. `1000x640`              |
-| `RUSTYHUSKY_SCRIPT`    | run a UI script instead of real input (see [AGENTS.md](AGENTS.md)) |
-| `RUSTYHUSKY_SHOTS`     | folder for the script's screenshots (default `shots`) |
+| `GRIN_DATA_DIR`        | folder for `settings.json`                        |
+| `GRIN_VIDEO_DIR`       | folder for saved videos                           |
+| `GRIN_LANG`            | `en` or `sv`, overrides the saved language for this run |
+| `GRIN_FFMPEG`          | path to the ffmpeg program (a wrong path simulates missing FFmpeg) |
+| `GRIN_WINDOW`          | force a window size, e.g. `1000x640`              |
+| `GRIN_SCRIPT`          | run a UI script instead of real input (see [AGENTS.md](AGENTS.md)) |
+| `GRIN_SHOTS`           | folder for the script's screenshots (default `shots`) |
 
 ## Documentation
 
 | Document | Contents |
 | -------- | -------- |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Modules, coordinates, time step, i18n, recording flow |
-| [docs/GAME_RULES.md](docs/GAME_RULES.md) | The example game's behaviour; the place for your game's rules |
-| [docs/NEW_GAME.md](docs/NEW_GAME.md) | Step by step from the template to your own game |
+| [docs/GAME_RULES.md](docs/GAME_RULES.md) | GRIN's authoritative game rules |
+| [docs/game/](docs/game/) | GRIN design package: decisions, technical design, characters, configuration, plan, tests, template audit ([Swedish overview](docs/game/README_SV.md)) |
+| [docs/FRAMEWORK_PATCHES.md](docs/FRAMEWORK_PATCHES.md) | Changes to RustyHusky framework files, to reapply after a template update |
+| [docs/NEW_GAME.md](docs/NEW_GAME.md) | The template's guide to building a game on it |
 | [docs/UPSTREAM_FIXES.md](docs/UPSTREAM_FIXES.md) | The patched miniquad: symptom, cause, verification, how to remove it |
 | [AGENTS.md](AGENTS.md) | Rules and checks for contributors and AI agents |
 | [CHANGELOG.md](CHANGELOG.md) | Changes per version |
@@ -277,7 +247,7 @@ prefix is `config::ENV_PREFIX` (`RUSTYHUSKY` here):
 
 ## License
 
-RustyHusky is free software, licensed under the GNU General Public License,
+GRIN, like RustyHusky, is free software, licensed under the GNU General Public License,
 version 3 or (at your option) any later version (GPL-3.0-or-later). The full
 text is in [LICENSE](LICENSE).
 

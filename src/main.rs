@@ -8,8 +8,8 @@ mod app;
 mod audio;
 mod capture;
 mod config;
-mod example;
 mod game;
+mod grin;
 mod i18n;
 mod pacing;
 mod screen;
@@ -29,7 +29,7 @@ use view::View;
 
 /// The game the framework runs. Replace it with your own type that
 /// implements `game::Game`.
-type ActiveGame = example::ExampleGame;
+type ActiveGame = grin::GrinGame;
 
 /// Upper bound on simulated time per frame, so a hitch never causes a
 /// burst of catch-up steps.

@@ -46,9 +46,10 @@ see [docs/UPSTREAM_FIXES.md](docs/UPSTREAM_FIXES.md).
 
 ## Assets
 
-`assets/paw.png` (generated with ImageMagick) and `assets/chime.wav` (an
-880 Hz tone generated with FFmpeg) were made for RustyHusky and are covered
-by the project's license, GPL-3.0-or-later.
+GRIN has no image or sound files yet: its creatures and effects are drawn
+in code and covered by the project's license, GPL-3.0-or-later. No Snood
+artwork, sounds, character names or levels are used. (The template's
+example assets were removed.)
 
 ## FFmpeg
 
