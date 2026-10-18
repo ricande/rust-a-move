@@ -6,6 +6,7 @@
 
 5     shot 00-menu
 10    click 270 526   # Play
+15    click 270 528   # Animation lab (setup screen)
 35    shot 01-cast
 36    key down        # radius 60
 51    shot 02-cast-big

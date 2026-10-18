@@ -10,8 +10,9 @@ nervous, and Runners try to escape sideways when a path opens.
 The name GRIN is provisional. This is a local prototype; nothing has been
 published.
 
-**Status:** M1 – procedural character animation lab. The playable game
-(M2–M7) is not built yet; see
+**Status:** M2 – shooting range: aiming without a line, fear on the
+predicted first creature, shots with wall bounces that attach locally. No
+matching, falls, blasts, runners or real ending yet (M3–M5); see
 [docs/game/06_IMPLEMENTATION_PLAN.md](docs/game/06_IMPLEMENTATION_PLAN.md).
 
 GRIN is built on the [RustyHusky](https://github.com/ricande/RustyHusky)
@@ -20,9 +21,29 @@ template 0.3.0 (commit `91c257d8e60ca381768dde0258e04d745a30d184`): portrait
 1080 × 1920 60 fps gameplay recording via FFmpeg. Changes to the framework
 files are listed in [docs/FRAMEWORK_PATCHES.md](docs/FRAMEWORK_PATCHES.md).
 
+## Starting a round
+
+A round opens a setup screen: **Shooting range (M2)** or **Animation lab
+(M1)** (Up/Down and Space, or the mouse). In both, Enter ends the round.
+
+## The shooting range (M2)
+
+| Key / mouse | Action |
+| --- | --- |
+| Mouse, or Left/Right (A/D) held | aim (the keyboard keeps the aim until the mouse really moves) |
+| Click in the field, or Space | fire |
+| Z / X | previous / next test board (mixed, ceiling gaps, curtain, pocket) |
+| Up / Down | board size: 8, 6, 12, 18 columns at zoom 100 %, 18 and 6 at 75 % |
+| Esc / P | pause (framework) |
+
+There is no aiming line: the creature the shot would hit first looks
+terrified. Angry gives nothing away. With `GRIN_DEV=1`, S shows the
+colliders and W the predicted shot path (development only).
+`scripts/range_tour.txt` plays through it with screenshots and a video.
+
 ## The animation lab (M1)
 
-Starting a round opens the character lab. Keys:
+Keys:
 
 | Key | Action |
 | --- | --- |

@@ -59,6 +59,8 @@ On Fire, recompute against the latest revision, then freeze occupancy/ceiling/es
 
 For creature contact, candidates are valid empty six-neighbours of the struck cell. Reject candidates whose centre is outside the side bounds, above the ceiling, overlapping occupied circles (apart from exact packing contact), or unreachable from the impact point without crossing another expanded occupied circle. The short snap segment may touch the target but cannot pass through its interior or another creature; define allowable tangency in tests. Choose smallest squared distance from projectile contact centre to candidate centre; ties use row then column. If none is valid: `BoardBlocked`.
 
+**As implemented (M2, `src/grin/shot.rs`):** a creature-hit candidate must lie at most 60° round the struck creature from the contact direction and its straight snap path must stay at least 2r (minus tolerance) from every other occupied centre; this is the concrete form of "may touch the target but not pass through its interior or another creature". See the decision log in `01_DECISIONS.md`.
+
 For ceiling contact consider empty top-row cells adjacent in x to the contact location, at most one diameter from it; validate the same short swept snap. Choose nearest, then smallest column. Do not use round-to-grid across the entire board, overwrite occupancy or attach on the far side of an obstacle. Test three-way junctions and narrow gaps before tuning visuals.
 
 ## 5. Rule transaction and events

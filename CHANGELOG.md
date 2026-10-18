@@ -21,6 +21,16 @@ All notable changes to GRIN are documented here.
 - `View::fan`, `View::ellipse`, `View::polyline`, `View::circle_lines`
   (framework patch, see `docs/FRAMEWORK_PATCHES.md`).
 
+- Shooting range (M2), chosen on a new game-local setup screen: aiming
+  with the mouse or keys (10°–170°), no aiming line, fear on the predicted
+  first creature (never on Angry), shots with any number of side-wall
+  bounces, local attachment or a reported blocked board, ammunition from
+  the families on the board, four seeded test boards at six sizes.
+- Shared shot planner with continuous collision; tests compare it with a
+  fine-step simulation over 1 200+ random shots, mirrored boards, tangent
+  and simultaneous contacts, and check that the afraid creature is the one
+  hit. `GRIN_DEV=1` path and collider overlays. `scripts/range_tour.txt`.
+
 ### Removed
 
 - The template's example game and its assets (`paw.png`, `chime.wav`).

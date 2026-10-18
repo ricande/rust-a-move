@@ -1,24 +1,36 @@
 //! GRIN (working title): a Snood-inspired aiming and matching game with
 //! grumpy geometric creatures. See docs/GAME_RULES.md and docs/game/.
 //!
-//! Milestone M1: a round opens the character animation lab (`lab.rs`).
-//! The playable board follows in M2–M3; it will sit next to the lab behind
-//! a game-local setup choice.
+//! A round starts with a game-local setup screen (rule P13: the template's
+//! `Game::new(level)` has no options hook). It offers the shooting range
+//! (milestone M2, `range.rs`: aiming by fear, shots, attachment) and the
+//! character animation lab (M1, `lab.rs`). Matching and a real ending come
+//! in M3.
+//!
+//! `GRIN_DEV=1` turns on development overlays (colliders, shot path) in the
+//! range; normal play never shows a trajectory.
 //!
 //! `handle` only records what was pressed; everything changes in `update`,
 //! because the framework may call `update` several times (or not at all)
 //! after one `handle`.
 
+mod board;
 mod emotion;
 mod geometry;
 mod lab;
+mod range;
 mod render;
+mod rng;
+mod shot;
+
+use macroquad::math::{Rect, Vec2};
 
 use crate::audio::Sfx;
 use crate::game::{Game, RoundResult};
 use crate::i18n::Text;
+use crate::t;
 use crate::ui::{Input, Key};
-use crate::view::View;
+use crate::view::{draw_button, with_alpha, View, FIELD_W, NEON, TEXT};
 
 const TEXTS: &[Text] = &[
     (
@@ -131,37 +143,177 @@ const TEXTS: &[Text] = &[
     ("lab.k.oval", "Oval", "Oval"),
     ("lab.k.runner", "Runner", "Rymmare"),
     ("lab.k.angry", "Angry", "Arg"),
+    ("setup.range", "Shooting range (M2)", "Skjutbana (M2)"),
+    ("setup.lab", "Animation lab (M1)", "Animationsverkstad (M1)"),
+    (
+        "setup.help",
+        "Up/Down and Space, or the mouse. In both: Enter ends the round.",
+        "Upp/Ned och Mellanslag, eller musen. I båda: Enter avslutar rundan.",
+    ),
+    ("range.title", "Range: {name}", "Skjutbana: {name}"),
+    ("range.f.mixed", "Mixed", "Blandat"),
+    ("range.f.gaps", "Ceiling gaps", "Luckor i taket"),
+    ("range.f.curtain", "Curtain (bank shots)", "Ridå (vallskott)"),
+    ("range.f.pocket", "Pocket", "Ficka"),
+    (
+        "range.detail",
+        "{columns} columns, zoom {zoom}%   Shots {shots}",
+        "{columns} kolumner, zoom {zoom} %   Skott {shots}",
+    ),
+    ("range.next", "next", "nästa"),
+    (
+        "range.m.danger",
+        "Danger line reached: new board. (A loss from M3.)",
+        "Dödslinjen nådd: nytt bräde. (Förlust från M3.)",
+    ),
+    (
+        "range.m.angry",
+        "Angry hit! (The blast comes in M4.)",
+        "Träff på Arg! (Explosionen kommer i M4.)",
+    ),
+    (
+        "range.m.blocked",
+        "No room here: the board is blocked. (A loss from M3.)",
+        "Ingen plats här: brädet är blockerat. (Förlust från M3.)",
+    ),
+    (
+        "range.help",
+        "Mouse or Left/Right (A/D) aim   Click or Space fire\nZ/X board   Up/Down width   Enter finish   Esc pause",
+        "Musen eller Vänster/Höger (A/D) siktar   Klick eller Mellanslag skjuter\nZ/X bräde   Upp/Ned bredd   Enter avslutar   Esc paus",
+    ),
+    (
+        "range.dev",
+        "DEV: S colliders   W shot path",
+        "DEV: S kolliderare   W skottbana",
+    ),
 ];
 
+/// The setup screen's buttons: shooting range, animation lab.
+pub const SETUP_BUTTONS: [Rect; 2] = [
+    Rect {
+        x: 110.0,
+        y: 430.0,
+        w: 320.0,
+        h: 56.0,
+    },
+    Rect {
+        x: 110.0,
+        y: 500.0,
+        w: 320.0,
+        h: 56.0,
+    },
+];
+
+enum Mode {
+    /// Choosing; `focus` is the highlighted button.
+    Setup {
+        focus: usize,
+    },
+    Range(Box<range::Range>),
+    Lab(Box<lab::Lab>),
+}
+
 pub struct GrinGame {
-    lab: lab::Lab,
-    /// Presses since the last update, applied there in order.
+    level: u32,
+    dev: bool,
+    mode: Mode,
+    /// Setup and lab presses since the last update, applied there in order.
     pending: Vec<Key>,
+    /// A setup click since the last update.
+    click: Option<Vec2>,
+    pointer: Option<Vec2>,
     finish_requested: bool,
     done: bool,
+}
+
+impl GrinGame {
+    fn with_dev(level: u32, dev: bool) -> GrinGame {
+        GrinGame {
+            level,
+            dev,
+            mode: Mode::Setup { focus: 0 },
+            pending: Vec::new(),
+            click: None,
+            pointer: None,
+            finish_requested: false,
+            done: false,
+        }
+    }
+
+    fn start(&mut self, choice: usize) {
+        self.mode = if choice == 0 {
+            Mode::Range(Box::new(range::Range::new(self.level, self.dev)))
+        } else {
+            Mode::Lab(Box::default())
+        };
+    }
+
+    fn update_setup(&mut self, mut focus: usize) {
+        let mut chosen = None;
+        for key in std::mem::take(&mut self.pending) {
+            match key {
+                Key::Up | Key::Down => focus = 1 - focus,
+                Key::Space | Key::Enter => chosen = Some(focus),
+                _ => {}
+            }
+        }
+        if let Some(p) = self.click.take() {
+            if let Some(i) = SETUP_BUTTONS.iter().position(|b| b.contains(p)) {
+                chosen = Some(i);
+            }
+        }
+        match chosen {
+            Some(i) => self.start(i),
+            None => self.mode = Mode::Setup { focus },
+        }
+    }
+
+    fn draw_setup(&self, v: &View, focus: usize) {
+        v.text_centered("GRIN", FIELD_W / 2.0, 250.0, 72.0, NEON);
+        v.text_centered(t!("menu.subtitle"), FIELD_W / 2.0, 300.0, 22.0, TEXT);
+        let labels = [t!("setup.range"), t!("setup.lab")];
+        for (i, (rect, label)) in SETUP_BUTTONS.iter().zip(labels).enumerate() {
+            let hover = self.pointer.is_some_and(|p| rect.contains(p));
+            draw_button(v, *rect, label, hover || focus == i, true);
+        }
+        v.text_wrapped_centered(t!("setup.help"), 640.0, 16.0, with_alpha(TEXT, 0.7));
+    }
 }
 
 impl Game for GrinGame {
     const TEXTS: &'static [Text] = TEXTS;
 
-    fn new(_level: u32) -> Self {
-        GrinGame {
-            lab: lab::Lab::new(),
-            pending: Vec::new(),
-            finish_requested: false,
-            done: false,
-        }
+    fn new(level: u32) -> Self {
+        let dev = crate::config::env_str("DEV").as_deref() == Some("1");
+        GrinGame::with_dev(level, dev)
     }
 
     fn handle(&mut self, input: &Input) {
         if self.done {
             return;
         }
-        for &key in &input.keys {
-            if key == Key::Enter {
-                self.finish_requested = true;
-            } else {
-                self.pending.push(key);
+        self.pointer = input.pointer;
+        match &mut self.mode {
+            Mode::Setup { .. } => {
+                self.pending.extend(input.keys.iter().copied());
+                if input.left_pressed {
+                    self.click = input.pointer.or(self.click);
+                }
+            }
+            Mode::Range(r) => {
+                if input.key(Key::Enter) {
+                    self.finish_requested = true;
+                }
+                r.handle(input);
+            }
+            Mode::Lab(_) => {
+                for &key in &input.keys {
+                    if key == Key::Enter {
+                        self.finish_requested = true;
+                    } else {
+                        self.pending.push(key);
+                    }
+                }
             }
         }
     }
@@ -170,26 +322,46 @@ impl Game for GrinGame {
         if self.done {
             return;
         }
-        for key in std::mem::take(&mut self.pending) {
-            self.lab.press(key);
-        }
         if self.finish_requested {
             self.done = true;
             return;
         }
-        self.lab.update();
+        match &mut self.mode {
+            Mode::Setup { focus } => {
+                let focus = *focus;
+                self.update_setup(focus);
+            }
+            Mode::Range(r) => r.update(),
+            Mode::Lab(lab) => {
+                for key in std::mem::take(&mut self.pending) {
+                    lab.press(key);
+                }
+                lab.update();
+            }
+        }
     }
 
     fn draw(&self, view: &View) {
-        self.lab.draw(view);
+        match &self.mode {
+            Mode::Setup { focus } => self.draw_setup(view, *focus),
+            Mode::Range(r) => r.draw(view),
+            Mode::Lab(lab) => lab.draw(view),
+        }
     }
 
     fn take_sounds(&mut self) -> Vec<Sfx> {
-        Vec::new()
+        match &mut self.mode {
+            Mode::Range(r) => r.take_sounds(),
+            _ => Vec::new(),
+        }
     }
 
     fn finished(&self) -> Option<RoundResult> {
-        self.done.then_some(RoundResult { score: 0 })
+        let score = match &self.mode {
+            Mode::Range(r) => r.shots,
+            _ => 0,
+        };
+        self.done.then_some(RoundResult { score })
     }
 }
 
@@ -205,49 +377,102 @@ mod tests {
         }
     }
 
+    fn click(p: Vec2) -> Input {
+        Input {
+            pointer: Some(p),
+            left_pressed: true,
+            left_down: true,
+            ..Default::default()
+        }
+    }
+
+    fn lab_game() -> GrinGame {
+        let mut g = GrinGame::with_dev(1, false);
+        g.handle(&click(SETUP_BUTTONS[1].center()));
+        g.update(FIXED_DT);
+        assert!(matches!(g.mode, Mode::Lab(_)));
+        g
+    }
+
+    fn lab(g: &GrinGame) -> &lab::Lab {
+        match &g.mode {
+            Mode::Lab(l) => l,
+            _ => panic!("not in the lab"),
+        }
+    }
+
     /// F02/F03: a press is applied once, in the next update, however many
     /// updates follow one `handle`.
     #[test]
     fn presses_apply_once_in_update() {
-        let mut g = GrinGame::new(1);
+        let mut g = lab_game();
         g.handle(&press(Key::X));
-        assert_eq!(g.lab.scenario, 0, "handle changes nothing");
+        assert_eq!(lab(&g).scenario, 0, "handle changes nothing");
         g.update(FIXED_DT);
         g.update(FIXED_DT);
         g.update(FIXED_DT);
-        assert_eq!(g.lab.scenario, 1);
-        // No update: nothing yet, then exactly one step.
+        assert_eq!(lab(&g).scenario, 1);
         g.handle(&press(Key::X));
         g.handle(&Input::default());
-        assert_eq!(g.lab.scenario, 1);
+        assert_eq!(lab(&g).scenario, 1);
         g.update(FIXED_DT);
-        assert_eq!(g.lab.scenario, 2);
+        assert_eq!(lab(&g).scenario, 2);
     }
 
     #[test]
     fn enter_finishes_and_stays_finished() {
-        let mut g = GrinGame::new(1);
+        let mut g = lab_game();
         g.handle(&press(Key::Enter));
         assert_eq!(g.finished(), None);
         g.update(FIXED_DT);
         assert_eq!(g.finished(), Some(RoundResult { score: 0 }));
-        let t = g.lab.time();
+        let t = lab(&g).time();
         g.handle(&press(Key::X));
         g.update(FIXED_DT);
-        assert_eq!(g.lab.time(), t, "frozen");
+        assert_eq!(lab(&g).time(), t, "frozen");
         assert_eq!(g.finished(), Some(RoundResult { score: 0 }));
     }
 
     #[test]
+    fn setup_chooses_by_keys_and_never_fires() {
+        let mut g = GrinGame::with_dev(1, false);
+        g.handle(&press(Key::Down));
+        g.update(FIXED_DT);
+        assert!(matches!(g.mode, Mode::Setup { focus: 1 }));
+        g.handle(&press(Key::Up));
+        g.handle(&press(Key::Space));
+        g.update(FIXED_DT);
+        let Mode::Range(r) = &g.mode else {
+            panic!("range expected")
+        };
+        assert_eq!(r.shots, 0, "the choosing press does not fire");
+        // Clicking the range button with the mouse does not fire either.
+        let mut g = GrinGame::with_dev(1, false);
+        g.handle(&click(SETUP_BUTTONS[0].center()));
+        for _ in 0..10 {
+            g.update(FIXED_DT);
+        }
+        let Mode::Range(r) = &g.mode else {
+            panic!("range expected")
+        };
+        assert_eq!(r.shots, 0);
+        // A click beside the buttons does nothing.
+        let mut g = GrinGame::with_dev(1, false);
+        g.handle(&click(Vec2::new(20.0, 20.0)));
+        g.update(FIXED_DT);
+        assert!(matches!(g.mode, Mode::Setup { .. }));
+    }
+
+    #[test]
     fn time_advances_only_in_update() {
-        let mut g = GrinGame::new(1);
+        let mut g = lab_game();
         for _ in 0..10 {
             g.handle(&Input::default());
         }
-        assert_eq!(g.lab.time(), 0.0);
+        assert_eq!(lab(&g).time(), 0.0);
         for _ in 0..120 {
             g.update(FIXED_DT);
         }
-        assert!((g.lab.time() - 1.0).abs() < 1e-9);
+        assert!((lab(&g).time() - 1.0).abs() < 1e-9);
     }
 }

@@ -68,3 +68,13 @@ User instructions override this package. For mechanics, `docs/GAME_RULES.md` is 
 ## Change discipline
 
 Record decisions in a dated log: requirement, old behaviour, new behaviour, reason, affected tests. A rule change is not a collision bug fix. Do not silently make the angry creature reveal aim, remove autonomous escape, add a trajectory line, or replace procedural expressions with static faces to simplify implementation.
+
+## Decision log
+
+| Date | Item | Before | Now | Reason | Tests |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-18 | Snap rule after a creature hit (M2) | "Short snap segment may touch the target but not pass its interior" (open wording) | Candidate cells are at most 60° round the struck creature from the contact direction (one cell step), with the snap path ≥ 2r from every other creature. | Any occupied neighbour within 60° would already overlap the projectile, so the rule always finds the natural cell and never snaps round a creature; no attachment on the far side. Implementation detail, not a rule change. | `shot::tests::attachments_are_local_and_empty`, `blocked_when_no_local_cell_exists`, `simultaneous_contacts_go_to_the_smaller_id` |
+| 2026-10-18 | Simultaneous contacts (M2) | "Creature over wall/ceiling, then stable id; corner order documented" | Creature, then ceiling, then side wall (a wall/ceiling corner stops at the ceiling); creatures by smaller `CreatureId`. Tolerance 1e−7 · diameter. | Fixes the policy the design left to implementation. | `shot::tests::simultaneous_contacts_go_to_the_smaller_id`, `tangent_touch_counts_as_contact` |
+| 2026-10-18 | Pre-game setup screen (P13) | Proposed | A round opens a game-local setup screen: Shooting range (M2) or Animation lab (M1). Clicks and keys there never fire. Width/zoom move here as real options in M6. | Interim until the ordinary game (M3). | `grin::tests::setup_chooses_by_keys_and_never_fires` |
+| 2026-10-18 | M2 shot sounds | WAV SFX proposed | The range uses the framework's synthesized Blip (launch) and Click (bounce, attach) until original WAV SFX arrive in M3/M4. | Keeps M2 to geometry. | – |
+

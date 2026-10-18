@@ -1,0 +1,58 @@
+# Tour of the GRIN shooting range (M2): fear aiming, shots, bank shots,
+# board widths, pause and a saved video. Run with temp folders (see
+# AGENTS.md); add GRIN_DEV=1 to see the shot path overlay, which normal
+# play never shows:
+#   GRIN_SCRIPT=scripts/range_tour.txt GRIN_SHOTS=/tmp/grin/shots \
+#   GRIN_DATA_DIR=/tmp/grin/data GRIN_VIDEO_DIR=/tmp/grin/videos cargo run --release
+# One frame is 1/60 s; positions are logical (540 x 960).
+
+5     click 270 526   # Play
+13    shot r00-setup
+15    click 270 458   # Shooting range
+17    key w           # shot path overlay (only with GRIN_DEV=1)
+33    shot r01-aim-up
+34    move 170 330    # aim up-left: the predicted target is afraid
+59    shot r02-aim-left
+60    move 430 260    # aim up-right
+85    shot r03-aim-right
+86    click 430 260   # fire
+90    shot r04-flight
+130   shot r05-attached
+171   key x
+172   key x           # curtain board: bank shots
+177   move 539 640    # flat to the right: off the wall
+202   shot r06-bank-aim
+203   key space       # fire
+211   shot r07-bank-flight
+271   shot r08-bank-landed
+272   hold left       # keyboard aim takes over
+302   release left
+303   shot r09-keyboard-aim
+308   key space
+368   shot r10-after-keyboard-shot
+369   key x           # pocket
+370   move 300 420
+395   shot r11-pocket
+396   key x           # back to mixed
+397   key up
+398   key up
+399   key up       # 18 columns
+400   move 330 300
+425   shot r12-18-columns
+426   key up          # 18 columns, zoom 75%
+427   move 240 280
+452   shot r13-18-75
+453   key up          # 6 columns, zoom 75%
+454   move 290 300
+479   shot r14-6-75
+480   key space
+530   shot r15-6-75-landed
+531   key p           # pause: aim frozen
+532   move 100 300
+547   shot r16-paused
+548   key p
+568   key enter       # finish
+628   shot r17-results
+629   click 152 586   # Save video
+749   shot r18-saved
+750   quit
