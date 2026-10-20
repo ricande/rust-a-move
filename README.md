@@ -111,6 +111,23 @@ hint until your first shot. Esc or P pauses in every mode.
 After a win the results offer **Next round**, after a loss **Retry** (the
 same board again); both keep Save video / Discard video.
 
+**Level editor** (from the setup screen; it uses the width chosen there)
+
+| Key / mouse | Action |
+| --- | --- |
+| Click or drag on the board | paint with the chosen tool |
+| Palette | the six families, Angry, eraser; the sweatband button makes what you paint a runner |
+| Arrows, Space, D | move the cursor, paint, erase |
+| Z / X, A, W | previous / next tool, runner on/off, undo |
+| `< Slot >`, `< Ceiling >`, `< Blast >` | save slot 1–9, shots between ceiling drops (2–20), blast radius (1–3) |
+| Test (or Enter) | play the level with the real rules; when it ends, or on Enter, you are back in the editor |
+| Save / Load / Undo / Clear / Back | slots are `levels/custom-N.json` in the data folder |
+
+Creatures that do not hang from the ceiling are ringed in red, and the
+status line says when the level is ready to test. Saved levels use the same
+JSON format as `assets/levels/`, so a saved file can become a built-in
+level (see docs/DEVELOPMENT.md).
+
 **Shooting range** (Enter ends the round)
 
 

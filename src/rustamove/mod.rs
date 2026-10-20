@@ -18,6 +18,7 @@ mod aim;
 mod blast;
 mod board;
 mod content;
+mod editor;
 mod emotion;
 mod geometry;
 mod lab;
@@ -166,7 +167,50 @@ const TEXTS: &[Text] = &[
     ("setup.quality_low", "<  Effects: fewer  >", "<  Effekter: färre  >"),
     ("setup.quality_max", "<  Effects: maximum  >", "<  Effekter: maximala  >"),
     ("setup.how_to", "How to play", "Så spelar du"),
+    ("setup.editor", "Level editor", "Nivåeditor"),
     ("setup.range", "Shooting range (test)", "Skjutbana (test)"),
+    ("editor.title", "Level editor", "Nivåeditor"),
+    ("editor.exit", "Back", "Tillbaka"),
+    ("editor.slot", "<  Slot {n}  >", "<  Plats {n}  >"),
+    ("editor.ceiling", "<  Ceiling {n}  >", "<  Tak {n}  >"),
+    ("editor.radius", "<  Blast {n}  >", "<  Smäll {n}  >"),
+    ("editor.runner", "runner", "rymmare"),
+    ("editor.test", "Test", "Testa"),
+    ("editor.save", "Save", "Spara"),
+    ("editor.load", "Load", "Ladda"),
+    ("editor.undo", "Undo", "Ångra"),
+    ("editor.clear", "Clear", "Rensa"),
+    ("editor.ok", "Ready to test", "Klar att testa"),
+    ("editor.empty", "Paint some creatures", "Måla några figurer"),
+    ("editor.loose", "{n} hanging loose", "{n} hänger löst"),
+    ("editor.danger", "Too close to the danger line", "För nära dödslinjen"),
+    ("editor.invalid", "Not a playable level", "Ingen spelbar nivå"),
+    ("editor.saved", "Saved in slot {n}", "Sparad på plats {n}"),
+    ("editor.loaded", "Loaded slot {n}", "Laddade plats {n}"),
+    ("editor.slot_empty", "Slot {n} is empty", "Plats {n} är tom"),
+    (
+        "editor.unreadable",
+        "Could not read slot {n}: {error}",
+        "Kunde inte läsa plats {n}: {error}",
+    ),
+    ("editor.not_saved", "Could not save: {error}", "Kunde inte spara: {error}"),
+    (
+        "editor.cannot_test",
+        "Fix the level first: everything must hang from the ceiling",
+        "Rätta nivån först: allt måste hänga i taket",
+    ),
+    ("editor.test_won", "Test won, {score} points", "Testet vunnet, {score} poäng"),
+    ("editor.test_lost", "Test lost, {score} points", "Testet förlorat, {score} poäng"),
+    (
+        "editor.testing",
+        "Testing the level   Enter: back to the editor",
+        "Testar nivån   Enter: tillbaka till editorn",
+    ),
+    (
+        "editor.help",
+        "Click or drag to paint. Arrows move, Space paints, D erases, Z/X tool, A runner, W undo, Enter test",
+        "Klicka eller dra för att måla. Pilar flyttar, Mellanslag målar, D suddar, Z/X verktyg, A rymmare, W ångra, Enter testa",
+    ),
     ("help.title", "How to play", "Så spelar du"),
     (
         "help.fear",
@@ -312,11 +356,12 @@ enum Row {
     Flashes,
     Quality,
     Help,
+    Editor,
     Range,
     Lab,
 }
 
-const ROWS: [Row; 9] = [
+const ROWS: [Row; 10] = [
     Row::Play,
     Row::Columns,
     Row::Zoom,
@@ -324,14 +369,15 @@ const ROWS: [Row; 9] = [
     Row::Flashes,
     Row::Quality,
     Row::Help,
+    Row::Editor,
     Row::Range,
     Row::Lab,
 ];
 
 /// Where each setup row is, shared by input and drawing.
 fn row_rect(i: usize) -> Rect {
-    let gap = if i >= 6 { 14.0 } else { 0.0 };
-    Rect::new(110.0, 296.0 + i as f32 * 52.0 + gap, 320.0, 44.0)
+    let gap = if i >= 6 { 12.0 } else { 0.0 };
+    Rect::new(110.0, 286.0 + i as f32 * 50.0 + gap, 320.0, 42.0)
 }
 
 struct Setup {
@@ -367,6 +413,7 @@ enum Mode {
     Play(Box<round::Round>),
     Range(Box<range::Range>),
     Lab(Box<lab::Lab>),
+    Editor(Box<editor::Editor>),
 }
 
 pub struct RustAMove {
@@ -442,6 +489,14 @@ impl RustAMove {
                 round.reduced_flashes = options.reduced_flashes;
                 round.quality = options.visual_quality;
                 Mode::Play(Box::new(round))
+            }
+            Row::Editor => {
+                let dir = self
+                    .options_path
+                    .as_ref()
+                    .and_then(|p| p.parent())
+                    .map(|d| d.join("levels"));
+                Mode::Editor(Box::new(editor::Editor::new(options, dir)))
             }
             Row::Range => {
                 let mut r = range::Range::new(self.level, self.dev);
@@ -598,6 +653,7 @@ impl RustAMove {
                 }
                 .to_owned(),
                 Row::Help => t!("setup.how_to").to_owned(),
+                Row::Editor => t!("setup.editor").to_owned(),
                 Row::Range => t!("setup.range").to_owned(),
                 Row::Lab => t!("setup.lab").to_owned(),
             };
@@ -667,6 +723,7 @@ impl Game for RustAMove {
                 }
                 r.handle(input);
             }
+            Mode::Editor(e) => e.handle(input),
             Mode::Lab(_) => {
                 for &key in &input.keys {
                     if key == Key::Enter {
@@ -691,6 +748,21 @@ impl Game for RustAMove {
             Mode::Setup(_) => self.update_setup(),
             Mode::Play(r) => r.update(),
             Mode::Range(r) => r.update(),
+            Mode::Editor(e) => {
+                e.update();
+                if e.exit {
+                    // Back to the setup screen with the same options.
+                    let options = e.options;
+                    self.mode = Mode::Setup(Setup {
+                        focus: ROWS.iter().position(|&r| r == Row::Editor).unwrap_or(0),
+                        options,
+                        loaded: true,
+                        warning: None,
+                        help: false,
+                        preview: None,
+                    });
+                }
+            }
             Mode::Lab(lab) => {
                 for key in std::mem::take(&mut self.pending) {
                     lab.press(key);
@@ -718,6 +790,7 @@ impl Game for RustAMove {
             }
             Mode::Range(r) => r.draw(view),
             Mode::Lab(lab) => lab.draw(view),
+            Mode::Editor(e) => e.draw(view),
         }
     }
 
@@ -725,6 +798,7 @@ impl Game for RustAMove {
         match &mut self.mode {
             Mode::Play(r) => r.take_sounds(),
             Mode::Range(r) => r.take_sounds(),
+            Mode::Editor(e) => e.take_sounds(),
             _ => Vec::new(),
         }
     }

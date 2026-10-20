@@ -6,6 +6,11 @@ All notable changes to Rust a move are documented here.
 
 ### Added
 
+- Level editor on the setup screen: paint families, Angry and runners,
+  see loose creatures at once, test-play with the real rules and come back,
+  save and load nine slots in the level file format, set the ceiling
+  interval and blast radius. `scripts/editor_tour.txt`.
+
 - Effects: maximum, with twice the fragments and an extra shock wave in
   blasts; Left/Right step fewer, normal, maximum.
 

@@ -1,0 +1,60 @@
+# Tour of the level editor: paint a level with families, an Angry and a
+# runner, see a loose creature ringed in red and erase it, save in slot 2,
+# test-play and come back, clear, load, and go back to the setup screen.
+# Run with temp folders (see docs/DEVELOPMENT.md); try RUST_A_MOVE_LANG=sv:
+#   RUST_A_MOVE_SCRIPT=scripts/editor_tour.txt RUST_A_MOVE_SHOTS=/tmp/ram/shots \
+#   RUST_A_MOVE_DATA_DIR=/tmp/ram/data RUST_A_MOVE_VIDEO_DIR=/tmp/ram/videos cargo run --release
+
+5     click 270 526   # Play
+20    shot e00-setup
+21    click 270 669   # Level editor
+41    shot e01-empty
+43    click 40 798   # tool round
+45    click 60.0 130.0
+47    click 120.0 130.0
+49    click 90.0 182.0
+51    click 211 798   # tool hex
+53    click 180.0 130.0
+55    click 240.0 130.0
+57    click 150.0 182.0
+59    click 270.0 182.0
+61    click 97 798   # tool block
+63    click 300.0 130.0
+65    click 360.0 130.0
+67    click 330.0 182.0
+69    click 325 798   # tool oval
+71    click 420.0 130.0
+73    click 390.0 182.0
+75    click 450.0 182.0
+77    click 154 798   # tool diamond
+79    click 180.0 233.9
+81    click 240.0 233.9
+83    click 382 798   # tool angry
+85    click 210.0 182.0
+87    click 268 798   # tool triangle
+89    click 210.0 285.9
+91    click 390.0 389.8
+93    click 494 798   # runner on
+95    click 325 798   # tool oval
+97    click 480.0 130.0
+99    click 494 798   # runner off
+109   shot e02-painted-with-a-loose-one
+111   click 439 798   # tool erase
+113   click 390.0 389.8
+123   shot e03-ready
+124   click 138 70    # slot 2 (right half of the slot button)
+126   click 165 854   # Save
+136   shot e04-saved
+138   click 62 854    # Test
+168   shot e05-testing
+169   click 300 250   # a shot
+289   shot e06-test-shot
+290   key enter       # back to the editor
+300   shot e07-back
+301   click 476 854   # Clear
+311   shot e08-cleared
+312   click 268 854   # Load
+322   shot e09-loaded
+323   click 63 24     # Back to setup
+333   shot e10-setup
+334   quit

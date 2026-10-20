@@ -119,6 +119,69 @@ pub struct Level {
     pub explosion_radius: Option<u8>,
 }
 
+/// The level-file token of a creature (the inverse of `token`).
+fn token_of(kind: Kind, runner: bool) -> String {
+    let name = |f: Family| match f {
+        Family::Round => "round",
+        Family::Block => "block",
+        Family::Diamond => "diamond",
+        Family::Hex => "hex",
+        Family::Triangle => "triangle",
+        Family::Oval => "oval",
+    };
+    match (kind, runner) {
+        (Kind::Angry, _) => "angry".into(),
+        (Kind::Ordinary(f), true) => format!("runner:{}", name(f)),
+        (Kind::Ordinary(f), false) => name(f).into(),
+    }
+}
+
+/// Writes a level in the file format `parse` reads, one row per line (the
+/// layout of the files in `assets/levels/`). Rows run down to the last
+/// occupied one.
+pub fn to_json(level: &Level) -> String {
+    let rows = level.cells.iter().map(|c| c.0.row + 1).max().unwrap_or(0);
+    let mut lines = Vec::new();
+    for row in 0..rows {
+        let len = if row % 2 == 0 {
+            level.columns
+        } else {
+            level.columns - 1
+        };
+        let tokens: Vec<String> = (0..len)
+            .map(|col| {
+                level
+                    .cells
+                    .iter()
+                    .find(|c| c.0 == Cell::new(row, col))
+                    .map_or("null".into(), |&(_, k, r)| {
+                        format!("\"{}\"", token_of(k, r))
+                    })
+            })
+            .collect();
+        lines.push(format!("    [{}]", tokens.join(", ")));
+    }
+    let mut overrides = Vec::new();
+    if let Some(n) = level.ceiling_shots {
+        overrides.push(format!("\"ceiling_shots\": {n}"));
+    }
+    if let Some(n) = level.explosion_radius {
+        overrides.push(format!("\"explosion_radius\": {n}"));
+    }
+    let rules = if overrides.is_empty() {
+        String::new()
+    } else {
+        format!(",\n  \"rules_override\": {{ {} }}", overrides.join(", "))
+    };
+    format!(
+        "{{\n  \"schema_version\": {SCHEMA_VERSION},\n  \"id\": {},\n  \"columns\": {},\n  \"seed\": {},\n  \"rows\": [\n{}\n  ]{rules}\n}}\n",
+        serde_json::to_string(&level.id).expect("a string serializes"),
+        level.columns,
+        level.seed,
+        lines.join(",\n"),
+    )
+}
+
 fn token(t: &str) -> Option<(Kind, bool)> {
     let family = |name: &str| -> Option<Family> {
         Some(match name {
@@ -320,6 +383,8 @@ pub enum Source {
     Generated,
     /// The generator's result failed its checks; a simple known board.
     Fallback,
+    /// A level from the level editor, by its id.
+    Custom(String),
 }
 
 /// A usable start: enough creatures, all hanging from the ceiling, clear
@@ -408,6 +473,32 @@ mod tests {
             (0, 1, 1, 1)
         );
         assert!(curated(8, 0).is_none());
+    }
+
+    /// Writing a level and reading it back gives the same level, for every
+    /// curated level, and the text has the curated files' layout.
+    #[test]
+    fn levels_round_trip_through_json() {
+        for &(_, text) in CURATED {
+            let level = parse(text).unwrap();
+            let written = to_json(&level);
+            assert_eq!(parse(&written).unwrap(), level);
+        }
+        let level = Level {
+            id: "custom \"1\"".into(),
+            columns: 7,
+            seed: 9,
+            cells: vec![
+                (Cell::new(0, 6), Kind::Angry, false),
+                (Cell::new(1, 2), Kind::Ordinary(Family::Oval), true),
+            ],
+            ceiling_shots: Some(7),
+            explosion_radius: Some(2),
+        };
+        let written = to_json(&level);
+        assert_eq!(parse(&written).unwrap(), level, "{written}");
+        assert!(written.contains("\"runner:oval\""));
+        assert!(written.contains("[null, null, null, null, null, null, \"angry\"]"));
     }
 
     #[test]

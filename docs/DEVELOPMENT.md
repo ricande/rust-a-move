@@ -41,6 +41,7 @@ next to the code in `src/rustamove/`:
 | `board` | Row-major storage, ids, revisions, no overwriting, ceiling anchoring, ceiling drop by one pitch, danger line. |
 | `round` | R01–R13, X01, X04, X06–X08, E01–E12, E14: boxed-in runners stay (frantic next to an Angry); open ones struggle 90 ticks and leave for 10 points without counting as a shot; panic leaves at once; a closed route restarts on the other side; a shot beats a leaving runner and none leaves in flight; routes opened by a shot wait for aiming; runners leave one at a time and fallen ones do not escape; runners match and get blasted; panic is not remembered; the last escape wins; runner levels start blocked; a boxed-in Angry still explodes; chains resolve before falls and score once; a blast through the anchors drops the rest; Angry is inert unless hit; the rules set the radius; blasts lock input until shown, with one blast sound and bounded accents; three match and two do not; groups across rows; unrelated triples stay; cut branches fall once for fall points; walls hold nothing; a clearing shot wins before the ceiling drops; every fifth shot drops the ceiling; the danger line and blocked shots lose; ammunition follows the board; one sound per kind; presses outside aiming are dropped; rounds are deterministic; random play always ends and the result is stable after the ending hold; level 1 can be won. |
 | `blast` | Areas count graph steps through empty cells and never wrap; radius 1, 2 and 3; chains in waves on the snapshot; overlapping and cyclic blasts take each creature and each Angry once; a checkerboard chain climbs one column. |
+| `editor` | Clicking paints, replaces and erases; undo steps back; a drag is one undo step; runners and keyboard painting; nothing below the danger line or off the board; empty or loose levels cannot be tested; test play returns with the level untouched (and Enter leaves it); slots save and load in the level format, empty and broken slots are reported; values stay in range; buttons fit. |
 | `content` | Curated levels parse and fit at every zoom; bad files are rejected with a reason; width, support and danger are checked; generated boards are valid, connected, reproducible and grow with the level. |
 | `persistence` | Options round-trip; broken, out-of-range and newer files give defaults and a warning and are never rewritten by reading. |
 | `aim` | Pointer clamping, keyboard/mouse ownership, range limits, presses taken once. |
@@ -84,6 +85,7 @@ cargo run --release
 
 | Script | What it does |
 | --- | --- |
+| `scripts/editor_tour.txt` | The level editor: paints a level with families, an Angry and a runner, shows a loose creature ringed in red and erases it, saves in slot 2, test-plays and comes back, clears, loads, and returns to the setup screen. |
 | `scripts/setup_tour.txt` | The setup screen: the dimmed preview at 18 and 6 columns and zoom 75 %, Effects, How to play, the level-1 hint; run it also with `RUST_A_MOVE_LANG=sv` and `RUST_A_MOVE_WINDOW=1000x640`. |
 | `scripts/runner_tour.txt` | Plays levels 1–6 in a row with pictures every 6 frames in levels 5–6: a runner escaping once a match frees it, and a panicking runner next to an Angry that bolts the moment a match opens its way. Run it in Prioritize gameplay. |
 | `scripts/blast_tour.txt` | Plays levels 1–4 in a row: matches, the first Angry blast (level 3) and a three-wave chain (level 4) with pictures every two frames around the blasts, then saves the level-4 video. Run it in Prioritize gameplay. |
@@ -137,6 +139,7 @@ Expect `h264,1080,1920,60/1,…` and an AAC stream of the same length.
 | `rules.rs` | The tunable rule values (match size, ceiling interval, scores, timings). |
 | `content.rs` | The level JSON format and its validation, curated levels (`assets/levels/`), the seeded generator. |
 | `persistence.rs` | The game's options file `game-settings.json`. |
+| `editor.rs` | The level editor: painting, validation, test play, save slots. |
 | `aim.rs` | Aiming input shared by the round and the range. |
 | `sfx.rs` | The game's sounds (`assets/sfx/`, made by `scripts/make_sfx.py`). |
 | `geometry.rs` | `Layout` (columns, zoom, radius, rows), `Cell`, centres, neighbours, runner corridors. |
@@ -171,6 +174,9 @@ Expect `h264,1080,1920,60/1,…` and an AAC stream of the same length.
 - **A range test board:** add a case to `fixture_board` and bump
   `FIXTURES`; `fixtures_hang_from_the_ceiling_and_fit` checks it at every
   size.
+- **A level from the editor:** save it, copy `levels/custom-N.json` from the
+  data folder to `assets/levels/`, give it a fresh `id` and `seed`, and list
+  it in `CURATED`.
 - **A level:** add a JSON file to `assets/levels/` (format in
   [game/05_CONFIGURATION_CONTENT.md](game/05_CONFIGURATION_CONTENT.md)) and
   list it in `CURATED` in `content.rs`; the tests check that it parses and
