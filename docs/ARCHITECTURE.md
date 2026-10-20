@@ -27,8 +27,8 @@ it and how recording works. For the current game's behaviour, see
 | ------------- | :---------: | -------------- |
 | `main.rs`     |   | Window setup, the frame loop, Macroquad input → `ui::Input`, `ActiveGame`. |
 | `config.rs`   | ✓ | The project's name, id and environment variable prefix. |
-| `game.rs`     | ✓ | The `Game` trait (with the game's `TEXTS` and `SOUNDS`), `RoundResult`, `FIXED_DT`. |
-| `rustamove/`  | ✓¹ | The game, Rust a move: `geometry` (layout, cells, neighbours, runner corridors), `board` (occupancy, ids, anchoring), `shot` (shared shot prediction and flight), `rng` (owned seeded generator), `emotion` (moods and poses), `render` (procedural creatures through `View`), `range` (the M2 shooting range), `lab` (the M1 animation lab), `mod.rs` (setup screen and `Game`). See [game/03_TECHNICAL_DESIGN.md](game/03_TECHNICAL_DESIGN.md). |
+| `game.rs`     | ✓ | The `Game` trait (with the game's `TEXTS` and `SOUNDS`), `RoundResult` with its `Outcome` (won/lost), `FIXED_DT`. |
+| `rustamove/`  | ✓¹ | The game, Rust a move: `geometry` (layout, cells, neighbours, runner corridors), `board` (occupancy, ids, anchoring), `shot` (shared shot prediction and flight), `rng` (owned seeded generator), `emotion` (moods and poses), `render` (procedural creatures through `View`), `aim` (mouse/keyboard aiming), `round` (the classic round: matching, falls, score, ceiling pressure, win/loss), `rules` (tunable rule values), `content` (level format, curated levels, generator), `persistence` (the game's options file), `sfx` (the game's sounds), `range` (the M2 shooting range), `lab` (the M1 animation lab), `mod.rs` (setup screen and `Game`). See [game/03_TECHNICAL_DESIGN.md](game/03_TECHNICAL_DESIGN.md). |
 | `app.rs`      | ✓ | Screens (`Menu`, `Settings`, `Playing`, `Results`), transitions, button layouts, `VideoStatus`. |
 | `screens.rs`  |   | Draws the screens, the pause menu and the REC marker with the recording's length (window only). |
 | `view.rs`     | ✓² | `View` (logical ↔ pixels), colours, drawing helpers including embedded images (`image`), buttons. |
@@ -121,13 +121,14 @@ and a paused game advances neither game time, video time nor sound.
 ```
 Menu ──Play──► Playing{level 1} ──finished──► Results{level, Some(result)}
  ▲ │              │  ▲                          │        │
- │ Settings       Esc/P  Resume                 │ Next round → Playing{level+1}
- │ │              ▼  │                          │
+ │ Settings       Esc/P  Resume                 │ Won:  Next round → Playing{level+1}
+ │ │              ▼  │                          │ Lost: Retry      → Playing{level}
  │ ▼           Playing{paused} ──Abort──► Results{level, None}
  └─Back/Esc───────────────────── Main menu ◄────┘
 ```
 
-`App::round` grows each time a round starts; `Capture` uses it to start a new
+A won round plays the success sound, a lost one a neutral falling sound
+(`Sfx::Fail`); an aborted round neither. `App::round` grows each time a round starts; `Capture` uses it to start a new
 recording. `App::play_time` counts unpaused game time for the results.
 
 ## Recording flow

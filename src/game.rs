@@ -14,10 +14,20 @@ use crate::view::View;
 /// Fixed simulation time step: `Game::update` is always called with this.
 pub const FIXED_DT: f32 = 1.0 / 120.0;
 
+/// How a finished level ended.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Outcome {
+    /// The level was completed: success sound, "Next round".
+    Won,
+    /// The level was lost: a neutral sound and "Retry" at the same level.
+    Lost,
+}
+
 /// What a finished level reports to the results screen.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct RoundResult {
     pub score: u32,
+    pub outcome: Outcome,
 }
 
 pub trait Game {
@@ -58,7 +68,9 @@ pub trait Game {
     /// and adds them to the video's sound track.
     fn take_sounds(&mut self) -> Vec<Sfx>;
 
-    /// `Some` once the level is finished. The framework then stops
-    /// recording, stops calling `handle`/`update` and shows the results.
+    /// `Some` once the level is finished, won or lost. The framework then
+    /// stops recording, stops calling `handle`/`update` and shows the
+    /// results: "Next round" after a win, "Retry" (the same level) after a
+    /// loss. Must not change once returned.
     fn finished(&self) -> Option<RoundResult>;
 }

@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "id": "off-the-wall",
+  "columns": 8,
+  "seed": 202,
+  "rows": [
+    ["oval", "oval", "hex", "block", "block", "hex", "round", "round"],
+    ["oval", "hex", "hex", "block", "hex", "round", "round"],
+    [null, null, null, "block", "block", null, null, null],
+    [null, null, null, "diamond", null, null, null],
+    [null, null, null, "diamond", "diamond", null, null, null]
+  ]
+}

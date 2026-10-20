@@ -6,14 +6,16 @@
 //! `handle` stores intent; `update` does everything, one fixed step at a
 //! time, so a press arrives exactly once however frames and steps line up.
 
-use macroquad::math::{vec2, Vec2};
+use macroquad::math::vec2;
 
+use super::aim::{Aim, Intent};
 use super::board::{Board, CreatureId};
 use super::emotion::{self, Cues, Family, Kind, Mood, RunnerCue, FAMILIES};
 use super::geometry::{Cell, Layout, DANGER_Y, LAUNCHER};
 use super::render;
 use super::rng::Rng;
-use super::shot::{self, Flight, Hit, ShotPlan, AIM_MAX, AIM_MIN, SPEED_DIAMETERS};
+use super::sfx;
+use super::shot::{self, Flight, Hit, ShotPlan, SPEED_DIAMETERS};
 use crate::audio::Sfx;
 use crate::game::FIXED_DT;
 use crate::t;
@@ -31,8 +33,6 @@ pub const PRESETS: [(u16, f64); 6] = [
 ];
 /// Test boards. Z/X cycles them.
 pub const FIXTURES: usize = 4;
-/// Keyboard aim speed in degrees per second.
-const KEY_AIM_SPEED: f64 = 100.0;
 /// Pause after an attachment before aiming again (seconds).
 const SETTLE: f64 = 0.15;
 /// How long a message stays (seconds).
@@ -47,26 +47,11 @@ enum Phase {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-enum Owner {
-    Mouse,
-    Keyboard,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Message {
     AngryHit,
     Blocked,
     /// The board reached the danger line and was set up again.
     Danger,
-}
-
-/// Input gathered by `handle`, used by the next `update`.
-#[derive(Clone, Debug, Default)]
-struct Intent {
-    pointer: Option<Vec2>,
-    fire: bool,
-    keys: Vec<Key>,
-    held: Vec<Key>,
 }
 
 pub struct Range {
@@ -78,10 +63,7 @@ pub struct Range {
     show_colliders: bool,
     show_path: bool,
     pub reduced_motion: bool,
-    /// Aim angle in degrees (rule R02).
-    pub angle: f64,
-    owner: Owner,
-    last_pointer: Option<Vec2>,
+    pub aim: Aim,
     intent: Intent,
     phase: Phase,
     /// The current prediction while aiming.
@@ -181,27 +163,6 @@ pub fn fixture_board(layout: Layout, fixture: usize, seed: u64) -> Board {
     b
 }
 
-/// The aim angle towards a pointer, clamped to the legal range (R02):
-/// below the launcher it goes to the nearer end; at the launcher itself it
-/// keeps `current`.
-pub fn aim_towards(pointer: Vec2, current: f64) -> f64 {
-    let dx = pointer.x as f64 - LAUNCHER.x;
-    let dy = LAUNCHER.y - pointer.y as f64;
-    if dx == 0.0 && dy == 0.0 {
-        return current;
-    }
-    let a = dy.atan2(dx).to_degrees();
-    if a < AIM_MIN {
-        if a >= -90.0 {
-            AIM_MIN
-        } else {
-            AIM_MAX
-        }
-    } else {
-        a.min(AIM_MAX)
-    }
-}
-
 impl Range {
     pub fn new(level: u32, dev: bool) -> Range {
         let mut r = Range {
@@ -213,9 +174,7 @@ impl Range {
             show_colliders: false,
             show_path: false,
             reduced_motion: false,
-            angle: 90.0,
-            owner: Owner::Keyboard,
-            last_pointer: None,
+            aim: Aim::default(),
             intent: Intent::default(),
             phase: Phase::Aiming,
             plan: None,
@@ -268,15 +227,7 @@ impl Range {
     }
 
     pub fn handle(&mut self, input: &Input) {
-        let i = &mut self.intent;
-        i.pointer = input.pointer;
-        i.held.clone_from(&input.held);
-        i.keys.extend(input.keys.iter().copied());
-        // A click in the field or Space fires; outside the field (pointer
-        // None) a click does nothing.
-        if input.key(Key::Space) || (input.left_pressed && input.pointer.is_some()) {
-            i.fire = true;
-        }
+        self.intent.add(input);
     }
 
     fn seconds(&self, s: f64) -> u64 {
@@ -285,15 +236,12 @@ impl Range {
 
     pub fn update(&mut self) {
         self.ticks += 1;
-        let intent = std::mem::take(&mut self.intent);
-        // Keep the state that lasts (pointer, held keys) for later steps.
-        self.intent.pointer = intent.pointer;
-        self.intent.held.clone_from(&intent.held);
+        let intent = self.intent.take();
 
         for &key in &intent.keys {
             self.key(key);
         }
-        self.update_aim(&intent);
+        self.aim.update(&intent);
 
         match self.phase {
             Phase::Aiming => {
@@ -344,34 +292,13 @@ impl Range {
         }
     }
 
-    fn update_aim(&mut self, intent: &Intent) {
-        let left = intent.held.iter().any(|k| matches!(k, Key::Left | Key::A));
-        let right = intent.held.iter().any(|k| matches!(k, Key::Right | Key::D));
-        if left != right {
-            self.owner = Owner::Keyboard;
-            let step = KEY_AIM_SPEED * FIXED_DT as f64;
-            self.angle = (self.angle + if left { step } else { -step }).clamp(AIM_MIN, AIM_MAX);
-        } else if intent.pointer.is_some() && intent.pointer != self.last_pointer {
-            // Only real pointer movement takes the aim back (R02).
-            self.owner = Owner::Mouse;
-        }
-        if intent.pointer.is_some() {
-            self.last_pointer = intent.pointer;
-        }
-        if self.owner == Owner::Mouse {
-            if let Some(p) = intent.pointer {
-                self.angle = aim_towards(p, self.angle);
-            }
-        }
-    }
-
     fn refresh_plan(&mut self) {
         let current = self
             .plan
             .as_ref()
-            .is_some_and(|p| p.angle == self.angle && p.revision == self.board.revision());
+            .is_some_and(|p| p.angle == self.aim.angle && p.revision == self.board.revision());
         if !current {
-            self.plan = shot::plan(&self.board, self.angle).ok();
+            self.plan = shot::plan(&self.board, self.aim.angle).ok();
         }
     }
 
@@ -383,7 +310,7 @@ impl Range {
             self.flight = Some(Flight::new(plan));
             self.phase = Phase::Flight;
             self.shots += 1;
-            self.sounds.push(Sfx::Blip);
+            self.sounds.push(sfx::LAUNCH);
         }
     }
 
@@ -395,7 +322,7 @@ impl Range {
         let speed = SPEED_DIAMETERS * 2.0 * self.board.layout.r;
         let (bounces, arrived) = flight.advance(speed * FIXED_DT as f64);
         if bounces > 0 {
-            self.sounds.push(Sfx::Click);
+            self.sounds.push(sfx::BOUNCE);
         }
         if !arrived {
             return;
@@ -410,8 +337,8 @@ impl Range {
         match (plan.attachment, plan.hit) {
             (Some(cell), _) => {
                 self.board.place(cell, Kind::Ordinary(self.loaded), false);
-                self.sounds.push(Sfx::Click);
-                if self.reaches_danger() {
+                self.sounds.push(sfx::ATTACH);
+                if self.board.reaches_danger() {
                     // A loss from M3; here the range simply starts over.
                     self.rebuild();
                     self.message = Some((Message::Danger, self.ticks + self.seconds(MESSAGE)));
@@ -433,14 +360,6 @@ impl Range {
         self.next = self.draw_family();
         self.phase = Phase::Settling(self.ticks + self.seconds(SETTLE));
         self.plan = None;
-    }
-
-    /// Some collider's bottom is at or below the danger line (rule R11).
-    pub fn reaches_danger(&self) -> bool {
-        let l = &self.board.layout;
-        self.board
-            .occupied()
-            .any(|(cell, _)| l.centre(cell).y + l.r >= DANGER_Y)
     }
 
     /// The creature that shows fear: the plan's first hit, while aiming
@@ -563,7 +482,7 @@ impl Range {
         }
 
         let at = vec2(LAUNCHER.x as f32, LAUNCHER.y as f32);
-        let d = shot::direction(self.angle);
+        let d = shot::direction(self.aim.angle);
         let calm = Cues::default();
         let loaded = Kind::Ordinary(self.loaded);
         let face = emotion::pose(loaded, &calm, &Mood::default(), t, 1, self.reduced_motion);
@@ -683,6 +602,7 @@ pub fn draw_frame(v: &View, l: &Layout) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::rustamove::shot::AIM_MIN;
 
     fn step(r: &mut Range, input: Input) {
         r.handle(&input);
@@ -692,13 +612,6 @@ mod tests {
     fn fire() -> Input {
         Input {
             keys: vec![Key::Space],
-            ..Default::default()
-        }
-    }
-
-    fn pointer(p: Vec2) -> Input {
-        Input {
-            pointer: Some(p),
             ..Default::default()
         }
     }
@@ -730,8 +643,7 @@ mod tests {
                 let mut rng = Rng::new((preset * 10 + fixture) as u64);
                 for _ in 0..8 {
                     let angle = AIM_MIN + 160.0 * (rng.below(10_000) as f64 / 1e4);
-                    r.angle = angle;
-                    r.owner = Owner::Keyboard;
+                    r.aim.set(angle);
                     step(&mut r, Input::default());
                     let afraid = r.target();
                     let plan = r.plan.clone().unwrap();
@@ -799,54 +711,6 @@ mod tests {
         assert_eq!(r.shots, 1);
     }
 
-    /// G13: below the launcher the aim goes to the nearer end; at the
-    /// launcher it stays.
-    #[test]
-    fn pointer_aim_is_clamped() {
-        let l = vec2(LAUNCHER.x as f32, LAUNCHER.y as f32);
-        assert!((aim_towards(l + vec2(0.0, -100.0), 40.0) - 90.0).abs() < 1e-9);
-        assert_eq!(aim_towards(l + vec2(100.0, 50.0), 40.0), AIM_MIN);
-        assert_eq!(aim_towards(l + vec2(-100.0, 50.0), 40.0), AIM_MAX);
-        assert_eq!(aim_towards(l + vec2(100.0, 0.0), 40.0), AIM_MIN);
-        assert_eq!(aim_towards(l, 40.0), 40.0);
-        assert_eq!(
-            aim_towards(l + vec2(0.0, 80.0), 40.0),
-            AIM_MIN,
-            "straight down: right end"
-        );
-    }
-
-    /// G14: holding a key aims; an unchanged pointer does not take the aim
-    /// back; moving the pointer does.
-    #[test]
-    fn keyboard_owns_the_aim_until_the_pointer_moves() {
-        let mut r = Range::new(1, false);
-        let p = vec2(400.0, 500.0);
-        step(&mut r, pointer(p));
-        let mouse_angle = r.angle;
-        assert!(mouse_angle < 90.0);
-        let hold = Input {
-            pointer: Some(p),
-            held: vec![Key::Left],
-            ..Default::default()
-        };
-        for _ in 0..60 {
-            step(&mut r, hold.clone());
-        }
-        // 100°/s for 0.5 s (FIXED_DT is an f32, hence the tolerance).
-        assert!((r.angle - (mouse_angle + 50.0)).abs() < 1e-4, "{}", r.angle);
-        let kept = r.angle;
-        for _ in 0..10 {
-            step(&mut r, pointer(p));
-        }
-        assert_eq!(r.angle, kept, "an unmoved pointer leaves the keyboard aim");
-        step(&mut r, pointer(p + vec2(1.0, 0.0)));
-        assert!(
-            (r.angle - mouse_angle).abs() < 1.0,
-            "moving the mouse takes over"
-        );
-    }
-
     #[test]
     fn clicks_outside_the_field_do_not_fire() {
         let mut r = Range::new(1, false);
@@ -872,7 +736,7 @@ mod tests {
     #[test]
     fn fire_replans_against_the_latest_board() {
         let mut r = Range::new(1, false);
-        r.angle = 90.0;
+        r.aim.set(90.0);
         step(&mut r, Input::default());
         let old = r.plan.clone().unwrap();
         // Something appears in the way (as an escape or fall would do).

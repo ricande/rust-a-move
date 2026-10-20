@@ -38,15 +38,30 @@ Work in progress, built milestone by milestone
 | M0 | Project from the RustyHusky template, design docs | done |
 | M1 | Procedural characters and the animation lab | done |
 | M2 | Board, shared shot prediction, fear aiming, shooting range | done |
-| M3 | Matching, falls, score, ceiling pressure, win/lose and retry | next |
-| M4 | Angry blasts and chain reactions | planned |
+| M3 | Matching, falls, score, ceiling pressure, win/lose and retry | done |
+| M4 | Angry blasts and chain reactions | next |
 | M5 | Runners | planned |
 | M6 | Levels, saved options, tutorial | planned |
 | M7 | Recording and platform review, release candidate | planned |
 
-Today a round opens a setup screen with the **shooting range** (aiming,
-shots, bounces and attachment on test boards – no matching yet) and the
-**animation lab** (every expression and effect, scenario by scenario).
+Today the game is playable with ordinary creatures: match three or more,
+drop hanging clusters, beat the descending ceiling, win by clearing the
+board or lose at the danger line – then Retry or go on to the next level.
+Angry and Runners are visible in the animation lab and arrive in levels
+with M4 and M5. The setup screen also opens the **shooting range** (a test
+bench for aiming) and the **animation lab** (every expression and effect).
+
+### How to play
+
+- Aim with the mouse or Left/Right. There is no aiming line: **the creature
+  your shot will hit first looks terrified.** Click or press Space to fire.
+- Shots bounce off the side walls and stick next to what they hit. Three or
+  more of the same family disappear (10 points each); everything that no
+  longer hangs from the ceiling falls (20 points each).
+- Every fifth shot the ceiling – and the whole board with it – comes down
+  one row. The pips at the top count down to the next drop.
+- Clear the board to win. If any creature reaches the dashed danger line,
+  or a shot finds no room, the level is lost.
 
 ## Quick start
 
@@ -62,10 +77,26 @@ the animation lab.
 
 ## Controls
 
-**Setup screen:** Up/Down and Space, or the mouse. In both modes, Enter ends
-the round (results and video) and Esc or P pauses.
+**Setup screen** (before every round): Up/Down choose, Left/Right change,
+Space or Enter start; or the mouse (click the left or right half of a
+setting to lower or raise it). **Play** starts the level. **Width** sets the
+number of creatures in a long row (6–18) and with it their size; **Zoom**
+(75–100 %) scales the whole board. Both, and **Reduced motion**, are saved
+for the next rounds. Esc or P pauses in every mode.
 
-**Shooting range (M2)**
+**Playing**
+
+| Key / mouse | Action |
+| --- | --- |
+| Mouse, or Left/Right (A/D) held | aim, 10°–170° (the keyboard keeps the aim until the mouse really moves) |
+| Click in the field, or Space | fire |
+| Esc / P | pause (Resume or Abort round) |
+
+After a win the results offer **Next round**, after a loss **Retry** (the
+same board again); both keep Save video / Discard video.
+
+**Shooting range** (Enter ends the round)
+
 
 | Key / mouse | Action |
 | --- | --- |
@@ -74,7 +105,7 @@ the round (results and video) and Esc or P pauses.
 | Z / X | previous / next test board: mixed, ceiling gaps, curtain (bank shots), pocket |
 | Up / Down | board size: 8, 6, 12, 18 columns at zoom 100 %, 18 and 6 at 75 % |
 
-**Animation lab (M1)**
+**Animation lab** (Enter ends the round)
 
 | Key | Action |
 | --- | --- |
@@ -319,10 +350,11 @@ prefix is `config::ENV_PREFIX` (`RUST_A_MOVE` here):
 - In Prioritize gameplay, motion in the video is only as smooth as the
   display's frame rate: at 30 Hz every picture is shown twice. The file is
   60 fps either way.
-- The game is not playable to a win or loss yet (M3); the results screen
-  shows the number of shots as the score.
-- No game-specific sound effects yet: the range uses the template's
-  synthesized sounds.
+- Only ordinary creatures in levels so far: Angry blasts (M4) and runner
+  escapes (M5) are not in the game yet; a direct hit on an Angry in the
+  shooting range only uses up the shot.
+- Three hand-made levels at 8 columns; every other level and width is
+  generated. Generated boards are valid and connected, not proven solvable.
 - Rust a move builds against a patched copy of miniquad 0.4.11 in `vendor/`
   that fixes black text rectangles (macroquad#1006); see
   [docs/UPSTREAM_FIXES.md](docs/UPSTREAM_FIXES.md). Building it prints one

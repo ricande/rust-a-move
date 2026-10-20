@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "id": "first-grin",
+  "columns": 8,
+  "seed": 101,
+  "rows": [
+    ["round", "round", "block", "block", "hex", "hex", "oval", "oval"],
+    ["round", "block", "diamond", "diamond", "hex", "oval", "oval"],
+    [null, null, "diamond", null, null, "triangle", null, null],
+    [null, null, "triangle", null, null, "triangle", null]
+  ]
+}

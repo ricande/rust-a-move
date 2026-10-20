@@ -1,0 +1,110 @@
+# A real round of Rust a move (M3): win level 1 and save the video, then
+# lose level 1 at the danger line, Retry (same board), pause and abort.
+# The angles come from `cargo test tour_angles -- --ignored --nocapture`
+# (level 1, 8 columns, zoom 100 %); the pointer sits on the aim line.
+# Flat shots bounce many times and fly for seconds: the waits follow the
+# angle. Use Prioritize gameplay ({"recording_mode": "gameplay"} in the
+# data folder's settings.json) so every frame is exactly two game steps.
+# Run with temp folders (see docs/DEVELOPMENT.md):
+#   RUST_A_MOVE_SCRIPT=scripts/play_tour.txt RUST_A_MOVE_SHOTS=/tmp/ram/shots \
+#   RUST_A_MOVE_DATA_DIR=/tmp/ram/data RUST_A_MOVE_VIDEO_DIR=/tmp/ram/videos cargo run --release
+# One frame is 1/60 s; positions are logical (540 x 960).
+
+5     click 270 526   # Play
+15    shot p00-setup
+16    key space       # Play level 1 (8 columns, 100 %)
+40    shot p01-level1
+41    move 538.0000 800.3291
+61    shot w-01-aim
+62    click 538.0000 800.3291
+70    shot w-01-flight
+380   shot w-01-landed
+381   move 498.1218 655.1656
+401   shot w-02-aim
+402   click 498.1218 655.1656
+410   shot w-02-flight
+533   shot w-02-landed
+534   move 538.0000 768.0642
+554   shot w-03-aim
+555   click 538.0000 768.0642
+563   shot w-03-flight
+775   shot w-03-landed
+776   move 498.1218 655.1656
+796   shot w-04-aim
+797   click 498.1218 655.1656
+805   shot w-04-flight
+928   shot w-04-landed
+929   move 538.0000 795.4748
+949   shot w-05-aim
+950   click 538.0000 795.4748
+958   shot w-05-flight
+1246  shot w-05-landed
+1247  move 538.0000 802.7444
+1267  shot w-06-aim
+1268  click 538.0000 802.7444
+1276  shot w-06-flight
+1599  shot w-06-landed
+1639  shot w-ending-overlay
+1789  shot w-results
+1790  click 152 586   # Save video
+1910  shot w-saved
+1911  click 270 790   # Main menu
+1921  click 270 526   # Play: level 1 again
+1931  key space
+1955  shot l00-start
+1956  move 538.0000 802.7444
+1976  shot l-01-aim
+1977  click 538.0000 802.7444
+1985  shot l-01-flight
+2308  shot l-01-landed
+2309  move 538.0000 800.3291
+2329  shot l-02-aim
+2330  click 538.0000 800.3291
+2338  shot l-02-flight
+2648  shot l-02-landed
+2649  move 538.0000 802.7444
+2669  shot l-03-aim
+2670  click 538.0000 802.7444
+2678  shot l-03-flight
+3001  shot l-03-landed
+3002  move 538.0000 802.7444
+3022  shot l-04-aim
+3023  click 538.0000 802.7444
+3031  shot l-04-flight
+3354  shot l-04-landed
+3355  move 538.0000 800.3291
+3375  shot l-05-aim
+3376  click 538.0000 800.3291
+3384  shot l-05-flight
+3694  shot l-05-landed
+3695  move 538.0000 780.6905
+3715  shot l-06-aim
+3716  click 538.0000 780.6905
+3724  shot l-06-flight
+3963  shot l-06-landed
+3964  move 538.0000 797.9061
+3984  shot l-07-aim
+3985  click 538.0000 797.9061
+3993  shot l-07-flight
+4291  shot l-07-landed
+4292  move 538.0000 802.7444
+4312  shot l-08-aim
+4313  click 538.0000 802.7444
+4321  shot l-08-flight
+4644  shot l-08-landed
+4684  shot l-ending-overlay
+4834  shot l-results
+4835  click 152 586   # Save video
+4955  shot l-saved
+4956  click 270 726   # Retry
+4966  shot r00-retry-setup
+4967  key space
+4991  shot r01-same-board
+4992  key esc         # pause
+5002  shot r02-paused
+5003  click 270 550   # Abort round
+5063  shot r03-aborted
+5064  click 388 586   # Discard video
+5084  click 270 726   # Main menu
+5094  shot r04-menu
+5095  quit

@@ -8,7 +8,7 @@ use macroquad::prelude::*;
 use crate::app::{
     menu_buttons, pause_buttons, results_buttons, settings_buttons, App, Screen, VideoStatus,
 };
-use crate::game::Game;
+use crate::game::{Game, Outcome};
 use crate::settings::RecordingMode;
 use crate::t;
 use crate::ui::Button;
@@ -59,6 +59,12 @@ pub fn draw<G: Game>(
             dim(v, 0.3);
             let cx = FIELD_W / 2.0;
             match result {
+                Some(r) if r.outcome == Outcome::Lost => {
+                    let title = t!("results.failed", level = level);
+                    v.text_centered(&title, cx, 220.0, 52.0, ERROR);
+                    let score = t!("results.score", score = r.score);
+                    v.text_centered(&score, cx, 300.0, 32.0, TEXT);
+                }
                 Some(r) => {
                     let title = t!("results.complete", level = level);
                     v.text_centered(&title, cx, 220.0, 52.0, ACCENT);
@@ -74,12 +80,7 @@ pub fn draw<G: Game>(
                 let note = t!("results.video_limit", max = clock(max_video_seconds()));
                 v.text_wrapped_centered(&note, 500.0, 17.0, with_alpha(TEXT, 0.75));
             }
-            draw_buttons(
-                v,
-                &results_buttons(result.is_some(), &app.video),
-                app.focus,
-                pointer,
-            );
+            draw_buttons(v, &results_buttons(*result, &app.video), app.focus, pointer);
             if matches!(app.video, VideoStatus::Ready { .. }) {
                 let note = with_alpha(TEXT, 0.6);
                 v.text_wrapped_centered(t!("results.leave_note"), 880.0, 17.0, note);

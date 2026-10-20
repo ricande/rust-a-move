@@ -49,8 +49,25 @@ Commit `1a4184d`.
 | macOS (Apple Silicon) and Windows graphical runs | **NOT RUN** (CI covers build and tests only) |
 | Performance at the largest board with recording off | **NOT RUN** |
 
+## M3 – The ordinary playable game
+
+| Check | Result |
+| --- | --- |
+| fmt, clippy, tests (151), vendored check, build with Rust 1.87 | PASS |
+| Rule tests R01–R07, R11–R13, F01, F04–F05, F07–F10, F14 (see docs/DEVELOPMENT.md) | PASS |
+| Framework patch P3: lost level plays the Fail sound (no fanfare) and offers Retry of the same level | PASS (`app` tests) |
+| Determinism: same level, options and inputs give the same round, with or without pose evaluation | PASS |
+| Random play on five board configurations always ends; result stable and only after the ending hold | PASS |
+| `scripts/play_tour.txt` on the real display (Prioritize gameplay): level 1 won (260 points), results "LEVEL 1 COMPLETE" with Next round, video saved; level 1 lost at the danger line, "LEVEL 1 FAILED" in red with Retry, video saved; Retry gave the identical board; pause and abort; options file written with the defaults | PASS |
+| End frames of both saved videos show the in-game outcome ("Board cleared!", "Too low: the danger line!") before the results | PASS |
+| Saved videos: 1080×1920, 60/1 fps, H.264 + AAC of equal length (25.6 s and 41.2 s); no temporary files left | PASS |
+| Found while verifying: in Prioritize recording a script can outrun the game (documented in DEVELOPMENT.md); flat shots fly for seconds (the tour waits by angle); the outcome banner was too transparent (darkened) | fixed / documented |
+| Sound effects heard by a person, and their balance | **NOT RUN** |
+| Hands-on play with a real mouse; whether a 4 s flat bank shot feels too slow | **NOT RUN** (worth a playtest) |
+| Pressure every five shots: fun or frustrating? | **NOT RUN** (OPEN product choice) |
+
 ## Not yet verifiable
 
-Matching, falls, scoring, pressure, win/loss and retry (M3); blasts (M4);
-runner escapes in the game (M5); levels and saved options (M6); full
-recording-mode and platform review (M7).
+Angry blasts (M4); runner escapes in the game (M5); level progression,
+tutorial and quality settings (M6); full recording-mode and platform review
+(M7).

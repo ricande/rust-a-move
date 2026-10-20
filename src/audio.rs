@@ -20,12 +20,14 @@ pub enum Sfx {
     Blip,
     /// A level was completed.
     Success,
+    /// A level was lost.
+    Fail,
     /// The game's sound number `n` in `Game::SOUNDS` of the active game.
     #[allow(dead_code)] // Part of the game API; a game may have no sounds.
     Game(usize),
 }
 
-const ALL: [Sfx; 3] = [Sfx::Click, Sfx::Blip, Sfx::Success];
+const ALL: [Sfx; 4] = [Sfx::Click, Sfx::Blip, Sfx::Success, Sfx::Fail];
 
 impl Sfx {
     /// Index into `all_samples()`.
@@ -72,6 +74,11 @@ fn recipe(sfx: Sfx) -> Vec<Note> {
         Sfx::Success => [523.0, 659.0, 784.0, 1047.0]
             .iter()
             .map(|&f| note(Square, f, f, 0.1, 0.25))
+            .collect(),
+        // Falling, soft and short: no fanfare for a loss.
+        Sfx::Fail => [392.0, 330.0, 262.0]
+            .iter()
+            .map(|&f| note(Triangle, f, f * 0.97, 0.14, 0.35))
             .collect(),
     }
 }

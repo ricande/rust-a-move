@@ -38,15 +38,20 @@ next to the code in `src/rustamove/`:
 | Module | What the tests pin down |
 | --- | --- |
 | `geometry` | Layouts for 6–18 columns and 75–100 % zoom fit the board; neighbours are reciprocal and touching; nearest-cell tie-breaks; runner corridors check staggered rows; nearest exit, left on a tie. |
-| `board` | Row-major storage, ids, revisions, no overwriting, ceiling anchoring. |
+| `board` | Row-major storage, ids, revisions, no overwriting, ceiling anchoring, ceiling drop by one pitch, danger line. |
+| `round` | R01–R07/R11–R13: three match and two do not; groups across rows; unrelated triples stay; cut branches fall once for fall points; walls hold nothing; a clearing shot wins before the ceiling drops; every fifth shot drops the ceiling; the danger line and blocked shots lose; ammunition follows the board; one sound per kind; presses outside aiming are dropped; rounds are deterministic; random play always ends and the result is stable after the ending hold; level 1 can be won. |
+| `content` | Curated levels parse and fit at every zoom; bad files are rejected with a reason; width, support and danger are checked; generated boards are valid, connected, reproducible and grow with the level. |
+| `persistence` | Options round-trip; broken, out-of-range and newer files give defaults and a warning and are never rewritten by reading. |
+| `aim` | Pointer clamping, keyboard/mouse ownership, range limits, presses taken once. |
+| `sfx` | Every sound decodes. |
 | `shot` | The planner against an independent fine-step simulation (1 200+ random shots, 300+ with bounces); mirrored boards give mirrored shots; tangent contact; simultaneous contacts; ceiling gaps; blocked boards; Angry hides what is behind it; flights stop exactly once at any speed. |
-| `range` | The afraid creature is the one hit, at every board size and test board; no tunnelling; occupancy frozen in flight; presses during flight are dropped; one press is one shot; pointer clamping; keyboard/mouse aim ownership; replanning on fire. |
+| `range` | The afraid creature is the one hit, at every board size and test board; no tunnelling; occupancy frozen in flight; presses during flight are dropped; one press is one shot; replanning on fire. |
 | `emotion` | Blend timings; Angry ignores the aim completely; an aimed nervous neighbour shows more fear; reduced motion keeps the face; poses are pure; blink intervals. |
 | `render` | Shapes stay inside the collider, are star-shaped for the fan fill, and differ per family. |
 | `lab` | Every scenario runs; nervous ring; Angry twins move identically under aim; runner timing (90 ticks, panic on the first); chain blast removes each creature once. |
-| `mod` (game) | Presses apply once in `update`; the round end is stable; the setup screen never fires. |
+| `mod` (game) | Presses apply once in `update`; the setup screen never fires, changes width and zoom, saves on start, and the next round reads the same options and board. |
 
-The framework's own tests (flow, settings, translations, recording) use
+The framework's own tests (flow including win/loss/retry, settings, translations, recording) use
 their own test game in `src/app.rs`. Tests never touch the user's folders:
 use `crate::tests::temp_dir` for files, and never set environment variables
 in tests.
@@ -78,6 +83,7 @@ cargo run --release
 
 | Script | What it does |
 | --- | --- |
+| `scripts/play_tour.txt` | A real game: wins level 1 and saves the video, loses level 1 at the danger line and saves that video, Retry (same board), pause and abort. Its angles come from `cargo test tour_angles -- --ignored --nocapture`. Run it in Prioritize gameplay (below). |
 | `scripts/range_tour.txt` | Shooting range: mouse aim left/right, a shot in flight and landed, a bank shot on the curtain board, keyboard aim, the pocket board, 18 columns, zoom 75 %, pause, results and Save video. Add `RUST_A_MOVE_DEV=1` to see the path overlay in the screenshots. |
 | `scripts/lab_tour.txt` | Animation lab: all eight scenarios with their events, pause, slow motion, reduced motion, results and Save video. |
 | `scripts/ui_tour.txt`, `scripts/window_check.txt` | The template's tours of menus, settings and letterboxing (their game actions were written for the template's placeholder game). |
@@ -86,6 +92,13 @@ The command language (`key`, `hold`, `release`, `click`, `move`, `shot`,
 `quit`) is documented at the top of `src/script.rs`. Frames count from 1;
 two simulation steps run per frame. Board changes in the range are only
 accepted while aiming, so give a shot time to land before switching boards.
+
+In the default recording mode (Prioritize recording) the game waits for
+the video encoder, so a script can run ahead of the game and a click can
+arrive while a shot still flies (and is rightly ignored). For tours that
+depend on timing, put `{"recording_mode": "gameplay"}` in the data folder's
+`settings.json`; then every script frame is exactly two game steps. Flat
+shots bounce many times and can fly for several seconds.
 
 Check a saved video:
 
@@ -102,6 +115,12 @@ Expect `h264,1080,1920,60/1,…` and an AAC stream of the same length.
 | File | Role |
 | --- | --- |
 | `mod.rs` | `RustAMove`, the `Game` implementation: setup screen, mode switching, all game texts (English and Swedish). |
+| `round.rs` | The classic round: phases, firing, `resolve` (attach, match, falls, score, ceiling, danger, win/loss), presentation, HUD. |
+| `rules.rs` | The tunable rule values (match size, ceiling interval, scores, timings). |
+| `content.rs` | The level JSON format and its validation, curated levels (`assets/levels/`), the seeded generator. |
+| `persistence.rs` | The game's options file `game-settings.json`. |
+| `aim.rs` | Aiming input shared by the round and the range. |
+| `sfx.rs` | The game's sounds (`assets/sfx/`, made by `scripts/make_sfx.py`). |
 | `geometry.rs` | `Layout` (columns, zoom, radius, rows), `Cell`, centres, neighbours, runner corridors. |
 | `board.rs` | `Board`: creatures by cell, `CreatureId`, revision counter, ceiling anchoring. |
 | `shot.rs` | `plan` (shot prediction with bounces, contact and attachment) and `Flight`. |
@@ -134,12 +153,19 @@ Expect `h264,1080,1920,60/1,…` and an AAC stream of the same length.
 - **A range test board:** add a case to `fixture_board` and bump
   `FIXTURES`; `fixtures_hang_from_the_ceiling_and_fit` checks it at every
   size.
+- **A level:** add a JSON file to `assets/levels/` (format in
+  [game/05_CONFIGURATION_CONTENT.md](game/05_CONFIGURATION_CONTENT.md)) and
+  list it in `CURATED` in `content.rs`; the tests check that it parses and
+  fits.
+- **A sound:** add it to `scripts/make_sfx.py`, run the script, and list the
+  file in `sfx.rs`.
 - **A rule:** change [GAME_RULES.md](GAME_RULES.md) first, record the
   decision in [game/01_DECISIONS.md](game/01_DECISIONS.md), then the code and
   its tests. A rule change is never hidden inside a bug fix.
 
 ## Template updates
 
-Rust a move changes some framework files (`view.rs`, `AGENTS.md`, `main.rs`,
+Rust a move changes some framework files (`view.rs`, `game.rs`, `app.rs`,
+`screens.rs`, `audio.rs`, `i18n.rs`, `pacing.rs`, `AGENTS.md`, `main.rs`,
 `config.rs`). `scripts/update-framework.sh` overwrites framework files, so
 never run it blindly: follow [FRAMEWORK_PATCHES.md](FRAMEWORK_PATCHES.md).

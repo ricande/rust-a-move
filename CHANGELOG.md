@@ -40,6 +40,23 @@ All notable changes to Rust a move are documented here.
   and simultaneous contacts, and check that the afraid creature is the one
   hit. `RUST_A_MOVE_DEV=1` path and collider overlays. `scripts/range_tour.txt`.
 
+- **Playable game (M3):** the classic round with matching (three or more),
+  falls of unsupported creatures, score (10 per match, 20 per fall), a
+  ceiling that drops one row every five shots (counter pips), the danger
+  line, blocked boards, an in-game outcome banner and ending hold, and
+  Retry after a loss. Three hand-made 8-column levels, a seeded generator
+  for every other level and width, ammunition from the families on the
+  board.
+- Setup screen before every round: Play, board width (6–18), zoom
+  (75–100 %), reduced motion, shooting range, animation lab; options saved
+  in `game-settings.json`.
+- Original sound effects (launch, bounce, attach, pop, fall, ceiling) made
+  by `scripts/make_sfx.py`.
+- Framework: `RoundResult` has an `Outcome` (won/lost); a lost level plays
+  a neutral sound and offers Retry (patch P3).
+- `scripts/play_tour.txt`: win, loss, Retry, pause and abort with saved
+  videos.
+
 ### Removed
 
 - The template's example game and its assets (`paw.png`, `chime.wav`).

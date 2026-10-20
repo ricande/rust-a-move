@@ -155,7 +155,9 @@ const CATALOG: &[Text] = &[
     ("results.aborted", "ROUND ABORTED", "OMGÅNGEN AVBRUTEN"),
     ("results.score", "Score: {score}", "Poäng: {score}"),
     ("results.time", "Time: {time} s", "Tid: {time} s"),
+    ("results.failed", "LEVEL {level} FAILED", "NIVÅ {level} MISSLYCKAD"),
     ("results.next", "Next round", "Nästa omgång"),
+    ("results.retry", "Retry", "Försök igen"),
     ("results.menu", "Main menu", "Huvudmeny"),
     ("results.leave_note", "An unsaved video is discarded when you leave this screen.", "En osparad video kastas när du lämnar den här vyn."),
     // Video

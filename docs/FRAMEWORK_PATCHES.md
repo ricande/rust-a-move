@@ -44,12 +44,27 @@ checkout was clean at this commit when the game was created on 2026-10-18).
   `RUST_A_MOVE_` prefix, and the game-specific appendix is added at the end. The
   template's rules are otherwise unchanged.
 
-## Planned (not yet made)
+### P3 — Round outcome (won/lost) and Retry (M3)
 
-- **Round outcome Won/Lost + Retry (M3):** `RoundResult` only has a score
-  and every finished round plays Success. The game needs a generic outcome and
-  Retry in `game.rs`, `app.rs`, `screens.rs` and `i18n.rs`
-  (docs/game/03_TECHNICAL_DESIGN.md §8).
+- **Files:** `src/game.rs`, `src/app.rs`, `src/screens.rs`, `src/audio.rs`,
+  `src/i18n.rs`, `src/pacing.rs` (its test game), `docs/NEW_GAME.md`,
+  `docs/ARCHITECTURE.md`.
+- **Change:** `game::Outcome { Won, Lost }` and `RoundResult { score,
+  outcome }` (no `Default`: every result says how it ended). A won level
+  plays `Sfx::Success` and offers "Next round"; a lost one plays the new
+  synthesized `Sfx::Fail` and offers `ResultsAction::Retry`, which starts
+  the same level again. The results title reads "LEVEL n FAILED" in the
+  error colour. `results_buttons` takes the result instead of a bool. New
+  texts `results.failed`, `results.retry`. Abort is unchanged (`None`).
+  Recording, Save/Discard and the leave rules are unchanged.
+- **Why:** the template treated every finished round as a success; a game
+  with losses must not play a fanfare or offer "Next round" after one
+  (docs/game/03_TECHNICAL_DESIGN.md §8). Generic: nothing in it knows about
+  this game.
+- **Tests:** `app::tests::a_lost_level_offers_retry_of_the_same_level`
+  (Fail sound, no Success, Retry focused, same level, round counter grows),
+  existing flow tests updated.
+- **Upstream:** generic; a candidate for RustyHusky (not offered).
 
 ## Known template notes
 

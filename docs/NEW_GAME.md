@@ -31,7 +31,7 @@ Copy `src/example.rs` to `src/my_game.rs`, add `mod my_game;` and set
 | `draw(&View)` | Draw through `view` (`rect`, `circle`, `line`, `text`, `text_centered`, `image` …) in logical 540 × 960 coordinates. Must not change the game. |
 | `SOUNDS` | Your own WAV files (optional), see *Sounds* below. |
 | `take_sounds()` | Return the sounds started since the last call. |
-| `finished()` | `Some(RoundResult { score })` when the level is over. |
+| `finished()` | `Some(RoundResult { score, outcome })` when the level is over: `Outcome::Won` offers "Next round", `Outcome::Lost` plays a neutral sound and offers "Retry" (the same level). |
 
 Then delete `src/example.rs` (and `assets/paw.png`, `assets/chime.wav`
 unless you use them). The framework's tests have their own test game, and

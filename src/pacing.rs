@@ -237,6 +237,7 @@ mod tests {
         fn finished(&self) -> Option<RoundResult> {
             (self.steps >= END_STEPS).then_some(RoundResult {
                 score: self.presses,
+                outcome: crate::game::Outcome::Won,
             })
         }
     }

@@ -121,6 +121,20 @@ impl Board {
             .map(|(cell, _)| cell)
     }
 
+    /// Lowers the ceiling, and with it the whole board, by one row pitch
+    /// (rule R11). Rows and their parity stay; only the origin moves.
+    pub fn lower_ceiling(&mut self) {
+        self.layout.ceiling_y += self.layout.pitch();
+        self.revision += 1;
+    }
+
+    /// Whether any collider's bottom reaches the danger line (rule R11).
+    pub fn reaches_danger(&self) -> bool {
+        let l = &self.layout;
+        self.occupied()
+            .any(|(cell, _)| l.centre(cell).y + l.r >= super::geometry::DANGER_Y)
+    }
+
     /// Occupied cells connected to an occupied top-row cell (rule R07),
     /// in row-major order.
     pub fn anchored(&self) -> Vec<Cell> {
@@ -184,6 +198,34 @@ mod tests {
                 Cell::new(2, 0)
             ]
         );
+    }
+
+    #[test]
+    fn lowering_the_ceiling_moves_everything_one_pitch() {
+        let mut b = Board::new(Layout::new(8, 1.0).unwrap());
+        b.place(Cell::new(1, 2), Kind::Ordinary(Family::Hex), false);
+        let before = b.layout.centre(Cell::new(1, 2));
+        let rev = b.revision();
+        b.lower_ceiling();
+        let after = b.layout.centre(Cell::new(1, 2));
+        assert!((after.y - before.y - b.layout.pitch()).abs() < 1e-9);
+        assert_eq!(after.x, before.x, "parity kept");
+        assert_eq!(b.revision(), rev + 1, "plans must be remade");
+    }
+
+    #[test]
+    fn danger_counts_the_collider_bottom() {
+        let mut b = Board::new(Layout::new(8, 1.0).unwrap());
+        let l = b.layout;
+        // The last row whose bottom is still above the line.
+        let safe = (0..l.rows)
+            .rev()
+            .find(|&r| l.centre(Cell::new(r, 0)).y + l.r < super::super::geometry::DANGER_Y)
+            .unwrap();
+        b.place(Cell::new(safe, 0), Kind::Ordinary(Family::Hex), false);
+        assert!(!b.reaches_danger());
+        b.place(Cell::new(safe + 1, 0), Kind::Ordinary(Family::Hex), false);
+        assert!(b.reaches_danger());
     }
 
     #[test]

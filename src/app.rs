@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use macroquad::math::Rect;
 
 use crate::audio::Sfx;
-use crate::game::{Game, RoundResult, FIXED_DT};
+use crate::game::{Game, Outcome, RoundResult, FIXED_DT};
 use crate::settings::{self, RecordingMode, Settings};
 use crate::t;
 use crate::ui::{button_column, button_column_w, button_row, choose, Button, Input, Key};
@@ -56,6 +56,8 @@ pub enum ResultsAction {
     SaveVideo,
     DiscardVideo,
     NextRound,
+    /// The same level again, after a loss.
+    Retry,
     Menu,
 }
 
@@ -145,9 +147,13 @@ pub fn pause_buttons() -> Vec<Button<PauseAction>> {
     )
 }
 
-/// Save/Discard while a video is ready; "Next round" after a completed
-/// level; "Main menu". Leaving waits while the video is busy.
-pub fn results_buttons(completed: bool, video: &VideoStatus) -> Vec<Button<ResultsAction>> {
+/// Save/Discard while a video is ready; "Next round" after a won level,
+/// "Retry" after a lost one (nothing after an abort); "Main menu". Leaving
+/// waits while the video is busy.
+pub fn results_buttons(
+    result: Option<RoundResult>,
+    video: &VideoStatus,
+) -> Vec<Button<ResultsAction>> {
     let mut buttons = Vec::new();
     if matches!(video, VideoStatus::Ready { .. }) {
         buttons = button_row(
@@ -159,8 +165,10 @@ pub fn results_buttons(completed: bool, video: &VideoStatus) -> Vec<Button<Resul
         );
     }
     let mut leave = Vec::new();
-    if completed {
-        leave.push((t!("results.next").into(), ResultsAction::NextRound));
+    match result.map(|r| r.outcome) {
+        Some(Outcome::Won) => leave.push((t!("results.next").into(), ResultsAction::NextRound)),
+        Some(Outcome::Lost) => leave.push((t!("results.retry").into(), ResultsAction::Retry)),
+        None => {}
     }
     leave.push((t!("results.menu").into(), ResultsAction::Menu));
     for mut b in button_column(700.0, leave) {
@@ -301,8 +309,8 @@ impl<G: Game> App<G> {
                 }
             }
             Screen::Results { level, result } => {
-                let (level, completed) = (*level, result.is_some());
-                self.handle_results(input, level, completed);
+                let (level, result) = (*level, *result);
+                self.handle_results(input, level, result);
             }
         }
     }
@@ -385,8 +393,8 @@ impl<G: Game> App<G> {
             .and_then(|path| settings::save(path, &self.settings).err());
     }
 
-    fn handle_results(&mut self, input: &Input, level: u32, completed: bool) {
-        let buttons = results_buttons(completed, &self.video);
+    fn handle_results(&mut self, input: &Input, level: u32, result: Option<RoundResult>) {
+        let buttons = results_buttons(result, &self.video);
         let mut chosen = choose(&buttons, &mut self.focus, input);
         if input.key(Key::Escape) && !self.video.busy() {
             chosen = Some(ResultsAction::Menu);
@@ -402,15 +410,15 @@ impl<G: Game> App<G> {
                 self.video_request = Some(VideoRequest::Discard);
                 self.video = VideoStatus::Discarded;
             }
-            ResultsAction::NextRound | ResultsAction::Menu => {
+            ResultsAction::NextRound | ResultsAction::Retry | ResultsAction::Menu => {
                 // An unsaved video is thrown away when the player leaves.
                 if matches!(self.video, VideoStatus::Ready { .. }) {
                     self.video_request = Some(VideoRequest::Discard);
                 }
-                if action == ResultsAction::NextRound {
-                    self.start_round(level + 1);
-                } else {
-                    self.go(Screen::Menu);
+                match action {
+                    ResultsAction::NextRound => self.start_round(level + 1),
+                    ResultsAction::Retry => self.start_round(level),
+                    _ => self.go(Screen::Menu),
                 }
             }
         }
@@ -461,7 +469,10 @@ impl<G: Game> App<G> {
     pub fn end_round_if_finished(&mut self) {
         if let Screen::Playing { game, .. } = &self.screen {
             if let Some(result) = game.finished() {
-                self.ui_sounds.push(Sfx::Success);
+                self.ui_sounds.push(match result.outcome {
+                    Outcome::Won => Sfx::Success,
+                    Outcome::Lost => Sfx::Fail,
+                });
                 let level = self.level;
                 self.go(Screen::Results {
                     level,
@@ -481,10 +492,11 @@ mod tests {
 
     /// A minimal game for the framework's tests, so they do not depend on
     /// whatever game is plugged in: Space scores with a blip; Enter or a
-    /// click on `FINISH_BUTTON` finishes the level.
+    /// click on `FINISH_BUTTON` finishes the level; X loses it.
     struct TestGame {
         score: u32,
         done: bool,
+        lost: bool,
         sounds: Vec<Sfx>,
     }
 
@@ -501,6 +513,7 @@ mod tests {
             TestGame {
                 score: 0,
                 done: false,
+                lost: false,
                 sounds: Vec::new(),
             }
         }
@@ -509,7 +522,8 @@ mod tests {
                 self.score += 1;
                 self.sounds.push(Sfx::Blip);
             }
-            self.done |= input.key(Key::Enter) || input.clicked(FINISH_BUTTON);
+            self.lost |= !self.done && input.key(Key::X);
+            self.done |= self.lost || input.key(Key::Enter) || input.clicked(FINISH_BUTTON);
         }
         fn update(&mut self, _dt: f32) {}
         fn draw(&self, _view: &View) {}
@@ -517,7 +531,15 @@ mod tests {
             std::mem::take(&mut self.sounds)
         }
         fn finished(&self) -> Option<RoundResult> {
-            self.done.then_some(RoundResult { score: self.score })
+            let outcome = if self.lost {
+                Outcome::Lost
+            } else {
+                Outcome::Won
+            };
+            self.done.then_some(RoundResult {
+                score: self.score,
+                outcome,
+            })
         }
     }
 
@@ -581,7 +603,7 @@ mod tests {
         frame(&mut app, &Input::default());
         assert!((app.play_time - 4.0 * FIXED_DT).abs() < 1e-6);
         frame(&mut app, &key(Key::Enter)); // finishes the level
-        assert_eq!(results(&app), Some((1, Some(RoundResult { score: 1 }))));
+        assert_eq!(results(&app), Some((1, Some(won(1)))));
         assert!(app.take_ui_sounds().contains(&Sfx::Success));
 
         // Next round (the focus starts on it, recording is off).
@@ -590,9 +612,12 @@ mod tests {
         assert_eq!((app.round, app.level), (2, 2));
         assert_eq!(app.play_time, 0.0, "time restarts at the first frame");
         frame(&mut app, &click(FINISH_BUTTON.center()));
-        assert_eq!(results(&app), Some((2, Some(RoundResult { score: 0 }))));
+        assert_eq!(results(&app), Some((2, Some(won(0)))));
 
-        let menu = button(results_buttons(true, &app.video), ResultsAction::Menu);
+        let menu = button(
+            results_buttons(Some(won(0)), &app.video),
+            ResultsAction::Menu,
+        );
         frame(&mut app, &click(menu));
         assert!(matches!(app.screen, Screen::Menu));
         frame(&mut app, &click(button(menu_buttons(), MenuAction::Play)));
@@ -601,6 +626,39 @@ mod tests {
             (3, 1),
             "Play starts again at level 1"
         );
+    }
+
+    fn won(score: u32) -> RoundResult {
+        RoundResult {
+            score,
+            outcome: Outcome::Won,
+        }
+    }
+
+    #[test]
+    fn a_lost_level_offers_retry_of_the_same_level() {
+        let mut app = app();
+        frame(&mut app, &key(Key::Enter)); // Play
+        frame(&mut app, &key(Key::Space));
+        frame(&mut app, &key(Key::X)); // loses the level
+        let lost = RoundResult {
+            score: 1,
+            outcome: Outcome::Lost,
+        };
+        assert_eq!(results(&app), Some((1, Some(lost))));
+        let sounds = app.take_ui_sounds();
+        assert!(sounds.contains(&Sfx::Fail));
+        assert!(!sounds.contains(&Sfx::Success), "no fanfare for a loss");
+        let b = results_buttons(Some(lost), &app.video);
+        assert!(b.iter().all(|b| b.action != ResultsAction::NextRound));
+        // The focus starts on Retry: the same level again, a new round.
+        frame(&mut app, &key(Key::Enter));
+        assert!(app.running_game().is_some());
+        assert_eq!((app.round, app.level), (2, 1));
+        frame(&mut app, &key(Key::Enter)); // won this time
+        assert_eq!(results(&app), Some((1, Some(won(0)))));
+        frame(&mut app, &key(Key::Enter)); // Next round
+        assert_eq!((app.round, app.level), (3, 2));
     }
 
     #[test]
@@ -632,7 +690,7 @@ mod tests {
             &click(button(pause_buttons(), PauseAction::Abort)),
         );
         assert_eq!(results(&app), Some((1, None)));
-        let b = results_buttons(false, &app.video);
+        let b = results_buttons(None, &app.video);
         assert!(
             b.iter().all(|b| b.action != ResultsAction::NextRound),
             "no next round after an abort"
@@ -649,7 +707,7 @@ mod tests {
         frame(&mut app, &key(Key::Enter));
         assert!(results(&app).is_some());
         app.video = VideoStatus::Finishing;
-        let b = results_buttons(true, &app.video);
+        let b = results_buttons(Some(won(1)), &app.video);
         assert!(
             b.iter().all(|b| !b.enabled),
             "wait while the video is finished"
@@ -659,14 +717,17 @@ mod tests {
         assert!(results(&app).is_some(), "cannot leave while busy");
 
         app.video = VideoStatus::Ready { error: None };
-        let at = button(results_buttons(true, &app.video), ResultsAction::SaveVideo);
+        let at = button(
+            results_buttons(Some(won(1)), &app.video),
+            ResultsAction::SaveVideo,
+        );
         frame(&mut app, &click(at));
         assert_eq!(app.video_request, Some(VideoRequest::Save));
         assert_eq!(app.video, VideoStatus::Saving);
         app.video_request = None;
         app.video = VideoStatus::Ready { error: None };
         let at = button(
-            results_buttons(true, &app.video),
+            results_buttons(Some(won(1)), &app.video),
             ResultsAction::DiscardVideo,
         );
         frame(&mut app, &click(at));
@@ -773,7 +834,7 @@ mod tests {
         app.handle(&key(Key::Enter)); // finish: the score is now final
         app.advance(2);
         app.end_round_if_finished();
-        assert_eq!(results(&app), Some((1, Some(RoundResult { score: 1 }))));
+        assert_eq!(results(&app), Some((1, Some(won(1)))));
     }
 
     #[test]
