@@ -4,6 +4,11 @@ All notable changes to Rust a move are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- Effects: maximum, with twice the fragments and an extra shock wave in
+  blasts; Left/Right step fewer, normal, maximum.
+
 ## [0.1.0-rc.1] – 2026-10-20
 
 First release candidate: every rule of the design in the game, reviewed on

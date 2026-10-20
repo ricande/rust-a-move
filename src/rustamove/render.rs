@@ -471,18 +471,28 @@ pub fn draw_collider(v: &View, centre: Vec2, r: f32) {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Quality {
+    Low,
     #[default]
     Normal,
-    Low,
+    /// Twice the fragments and an extra shock-wave ring in blasts.
+    Maximum,
 }
 
 impl Quality {
     /// Fragments per removed creature.
     fn pieces(self) -> u64 {
         match self {
-            Quality::Normal => 7,
             Quality::Low => 3,
+            Quality::Normal => 7,
+            Quality::Maximum => 14,
         }
+    }
+
+    /// One step up (`step` > 0) or down, staying in Low ..= Maximum.
+    pub fn step(self, step: i32) -> Quality {
+        const ORDER: [Quality; 3] = [Quality::Low, Quality::Normal, Quality::Maximum];
+        let i = ORDER.iter().position(|&q| q == self).unwrap_or(1) as i32;
+        ORDER[(i + step.signum()).clamp(0, 2) as usize]
     }
 }
 
@@ -519,7 +529,14 @@ pub fn draw_debris(
 
 /// An explosion `t` seconds in: a short local flash (unless `reduced_flash`)
 /// and an expanding ring.
-pub fn draw_blast(v: &View, centre: Vec2, r: f32, t: f32, life: f32, reduced_flash: bool) {
+pub fn draw_blast(
+    v: &View,
+    centre: Vec2,
+    r: f32,
+    (t, life): (f32, f32),
+    reduced_flash: bool,
+    quality: Quality,
+) {
     if t < 0.0 || t > life {
         return;
     }
@@ -539,6 +556,11 @@ pub fn draw_blast(v: &View, centre: Vec2, r: f32, t: f32, life: f32, reduced_fla
         (0.35 * (1.0 - x) + 0.05) * r,
         ring,
     );
+    if quality == Quality::Maximum {
+        // A thin, faster shock wave ahead of the ring.
+        let wave = Color::new(1.0, 0.9, 0.6, 0.6 * (1.0 - x));
+        v.circle_lines(centre, r * (1.0 + 4.0 * x), 0.08 * r, wave);
+    }
 }
 
 /// The launcher pointing along `dir` (unit, field coordinates) with the
@@ -620,6 +642,21 @@ mod tests {
                 assert_ne!(a, b);
             }
         }
+    }
+
+    #[test]
+    fn effects_quality_steps_and_scales_fragments() {
+        assert_eq!(Quality::Low.step(1), Quality::Normal);
+        assert_eq!(Quality::Normal.step(1), Quality::Maximum);
+        assert_eq!(
+            Quality::Maximum.step(1),
+            Quality::Maximum,
+            "stays at the top"
+        );
+        assert_eq!(Quality::Maximum.step(-1), Quality::Normal);
+        assert_eq!(Quality::Low.step(-1), Quality::Low, "stays at the bottom");
+        assert!(Quality::Low.pieces() < Quality::Normal.pieces());
+        assert!(Quality::Normal.pieces() < Quality::Maximum.pieces());
     }
 
     #[test]

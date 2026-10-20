@@ -860,7 +860,14 @@ impl Lab {
                         render::Quality::Normal,
                     );
                     if angry_source {
-                        render::draw_blast(v, a.from, a.r, since, BLAST_LIFE as f32, false);
+                        render::draw_blast(
+                            v,
+                            a.from,
+                            a.r,
+                            (since, BLAST_LIFE as f32),
+                            false,
+                            render::Quality::Normal,
+                        );
                     }
                 }
             }

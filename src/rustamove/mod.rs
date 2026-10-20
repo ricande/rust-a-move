@@ -162,8 +162,9 @@ const TEXTS: &[Text] = &[
     ("setup.motion_on", "Reduced motion: on", "Mindre rörelse: på"),
     ("setup.flashes_off", "Reduced flashes: off", "Mindre blixtar: av"),
     ("setup.flashes_on", "Reduced flashes: on", "Mindre blixtar: på"),
-    ("setup.quality_normal", "Effects: normal", "Effekter: normala"),
-    ("setup.quality_low", "Effects: fewer", "Effekter: färre"),
+    ("setup.quality_normal", "<  Effects: normal  >", "<  Effekter: normala  >"),
+    ("setup.quality_low", "<  Effects: fewer  >", "<  Effekter: färre  >"),
+    ("setup.quality_max", "<  Effects: maximum  >", "<  Effekter: maximala  >"),
     ("setup.how_to", "How to play", "Så spelar du"),
     ("setup.range", "Shooting range (test)", "Skjutbana (test)"),
     ("help.title", "How to play", "Så spelar du"),
@@ -462,12 +463,7 @@ impl RustAMove {
             Row::Zoom => options.step_zoom(step),
             Row::Motion => options.reduced_motion ^= true,
             Row::Flashes => options.reduced_flashes ^= true,
-            Row::Quality => {
-                options.visual_quality = match options.visual_quality {
-                    render::Quality::Normal => render::Quality::Low,
-                    render::Quality::Low => render::Quality::Normal,
-                }
-            }
+            Row::Quality => options.visual_quality = options.visual_quality.step(step),
             _ => {}
         }
     }
@@ -500,8 +496,15 @@ impl RustAMove {
                     if key == Key::Left { -1 } else { 1 },
                 ),
                 Key::Space | Key::Enter => match row {
-                    Row::Motion | Row::Flashes | Row::Quality => {
-                        Self::change(&mut setup.options, row, 1)
+                    Row::Motion | Row::Flashes => Self::change(&mut setup.options, row, 1),
+                    // Space goes round: fewer, normal, maximum, fewer …
+                    Row::Quality => {
+                        let q = setup.options.visual_quality;
+                        setup.options.visual_quality = if q == render::Quality::Maximum {
+                            render::Quality::Low
+                        } else {
+                            q.step(1)
+                        };
                     }
                     Row::Columns | Row::Zoom => {}
                     Row::Help => setup.help = true,
@@ -588,11 +591,12 @@ impl RustAMove {
                     t!("setup.flashes_on"),
                     t!("setup.flashes_off"),
                 ),
-                Row::Quality => onoff(
-                    o.visual_quality == render::Quality::Low,
-                    t!("setup.quality_low"),
-                    t!("setup.quality_normal"),
-                ),
+                Row::Quality => match o.visual_quality {
+                    render::Quality::Low => t!("setup.quality_low"),
+                    render::Quality::Normal => t!("setup.quality_normal"),
+                    render::Quality::Maximum => t!("setup.quality_max"),
+                }
+                .to_owned(),
                 Row::Help => t!("setup.how_to").to_owned(),
                 Row::Range => t!("setup.range").to_owned(),
                 Row::Lab => t!("setup.lab").to_owned(),
@@ -964,12 +968,38 @@ mod tests {
         g.handle(&click(row_rect(row_index(Row::Play)).center()));
         g.update(FIXED_DT);
         let Mode::Play(r) = &g.mode else { panic!() };
-        assert_eq!(r.quality, render::Quality::Low);
+        assert_eq!(r.quality, render::Quality::Maximum);
         assert_eq!(
             persistence::load(&path).0.visual_quality,
-            render::Quality::Low
+            render::Quality::Maximum
         );
         let _ = std::fs::remove_dir_all(dir);
+    }
+
+    /// Effects: Right/Left step through fewer, normal, maximum; Space goes
+    /// round.
+    #[test]
+    fn effects_step_and_cycle() {
+        let mut g = game();
+        let quality = |g: &RustAMove| match &g.mode {
+            Mode::Setup(s) => s.options.visual_quality,
+            _ => panic!(),
+        };
+        for _ in 0..row_index(Row::Quality) {
+            g.handle(&press(Key::Down));
+        }
+        g.handle(&press(Key::Right));
+        g.update(FIXED_DT);
+        assert_eq!(quality(&g), render::Quality::Maximum);
+        g.handle(&press(Key::Space));
+        g.update(FIXED_DT);
+        assert_eq!(quality(&g), render::Quality::Low, "round to fewer");
+        g.handle(&press(Key::Space));
+        g.update(FIXED_DT);
+        assert_eq!(quality(&g), render::Quality::Normal);
+        g.handle(&press(Key::Left));
+        g.update(FIXED_DT);
+        assert_eq!(quality(&g), render::Quality::Low);
     }
 
     #[test]

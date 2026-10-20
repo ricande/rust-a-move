@@ -95,7 +95,7 @@ setting to lower or raise it). **Play** starts the level. **Width** sets the
 number of creatures in a long row (6–18) and with it their size; **Zoom**
 (75–100 %) scales the whole board. The next board is shown dimmed behind
 the menu, so you see what they do. **Reduced motion**, **Reduced flashes**
-(blasts without the white flash) and **Effects** (fewer fragments) never
+(blasts without the white flash) and **Effects** (fewer, normal or maximum fragments, plus a shock wave in blasts at maximum) never
 change the rules. Everything is saved for the next rounds. **How to play**
 explains the game on one page, and each teaching level shows a one-line
 hint until your first shot. Esc or P pauses in every mode.

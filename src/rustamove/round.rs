@@ -993,7 +993,14 @@ impl Round {
                     let c = render::body_color(a.kind);
                     render::draw_debris(v, a.from, r, c, (since, life), a.seed, self.quality);
                     if source {
-                        render::draw_blast(v, a.from, r, since, life, self.reduced_flashes);
+                        render::draw_blast(
+                            v,
+                            a.from,
+                            r,
+                            (since, life),
+                            self.reduced_flashes,
+                            self.quality,
+                        );
                     }
                 }
             }

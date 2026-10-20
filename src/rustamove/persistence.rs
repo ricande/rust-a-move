@@ -169,6 +169,8 @@ mod tests {
         // Missing fields default; unknown fields are ignored.
         let (o, _) = parse(r#"{"visual_quality": "low"}"#);
         assert_eq!(o.visual_quality, super::super::render::Quality::Low);
+        let (o, _) = parse(r#"{"visual_quality": "maximum"}"#);
+        assert_eq!(o.visual_quality, super::super::render::Quality::Maximum);
         assert_eq!(
             parse(r#"{"visual_quality": "ultra"}"#).1,
             Some(Warning::Invalid)
