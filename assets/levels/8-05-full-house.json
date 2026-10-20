@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "id": "full-house",
+  "columns": 8,
+  "seed": 303,
+  "rows": [
+    ["round","round","hex","hex","oval","oval","block","block"],
+    ["round","hex","triangle","oval","oval","block","block"],
+    ["diamond","diamond","triangle","triangle","round","round","hex","hex"],
+    ["diamond","oval","oval","angry","round","hex","hex"],
+    ["block","block","oval","triangle","triangle","diamond","diamond","round"]
+  ],
+  "rules_override": {
+    "ceiling_shots": 6
+  }
+}

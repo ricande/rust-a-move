@@ -15,6 +15,7 @@
 //! after one `handle`.
 
 mod aim;
+mod blast;
 mod board;
 mod content;
 mod emotion;
@@ -159,6 +160,8 @@ const TEXTS: &[Text] = &[
     ("setup.zoom", "<  Zoom: {percent}%  >", "<  Zoom: {percent} %  >"),
     ("setup.motion_off", "Reduced motion: off", "Mindre rörelse: av"),
     ("setup.motion_on", "Reduced motion: on", "Mindre rörelse: på"),
+    ("setup.flashes_off", "Reduced flashes: off", "Mindre blixtar: av"),
+    ("setup.flashes_on", "Reduced flashes: on", "Mindre blixtar: på"),
     ("setup.range", "Shooting range (test)", "Skjutbana (test)"),
     ("setup.lab", "Animation lab", "Animationsverkstad"),
     (
@@ -213,8 +216,8 @@ const TEXTS: &[Text] = &[
     ),
     (
         "range.m.angry",
-        "Angry hit! (The blast comes in M4.)",
-        "Träff på Arg! (Explosionen kommer i M4.)",
+        "Angry hit! (Blasts happen in the game, not on the range.)",
+        "Träff på Arg! (Explosioner sker i spelet, inte på skjutbanan.)",
     ),
     (
         "range.m.blocked",
@@ -240,23 +243,25 @@ enum Row {
     Columns,
     Zoom,
     Motion,
+    Flashes,
     Range,
     Lab,
 }
 
-const ROWS: [Row; 6] = [
+const ROWS: [Row; 7] = [
     Row::Play,
     Row::Columns,
     Row::Zoom,
     Row::Motion,
+    Row::Flashes,
     Row::Range,
     Row::Lab,
 ];
 
 /// Where each setup row is, shared by input and drawing.
 fn row_rect(i: usize) -> Rect {
-    let gap = if i >= 4 { 24.0 } else { 0.0 };
-    Rect::new(110.0, 360.0 + i as f32 * 64.0 + gap, 320.0, 52.0)
+    let gap = if i >= 5 { 20.0 } else { 0.0 };
+    Rect::new(110.0, 320.0 + i as f32 * 60.0 + gap, 320.0, 50.0)
 }
 
 struct Setup {
@@ -341,11 +346,11 @@ impl RustAMove {
                     geometry::Layout::new(options.columns, options.zoom()).unwrap_or_else(|_| {
                         geometry::Layout::new(8, 1.0).expect("the default layout is valid")
                     });
-                Mode::Play(Box::new(round::Round::new(
-                    self.level,
-                    layout,
-                    options.reduced_motion,
-                )))
+                {
+                    let mut round = round::Round::new(self.level, layout, options.reduced_motion);
+                    round.reduced_flashes = options.reduced_flashes;
+                    Mode::Play(Box::new(round))
+                }
             }
             Row::Range => {
                 let mut r = range::Range::new(self.level, self.dev);
@@ -377,11 +382,13 @@ impl RustAMove {
                         Row::Columns => setup.options.step_columns(step),
                         Row::Zoom => setup.options.step_zoom(step),
                         Row::Motion => setup.options.reduced_motion ^= true,
+                        Row::Flashes => setup.options.reduced_flashes ^= true,
                         _ => {}
                     }
                 }
                 Key::Space | Key::Enter => match row {
                     Row::Motion => setup.options.reduced_motion ^= true,
+                    Row::Flashes => setup.options.reduced_flashes ^= true,
                     Row::Columns | Row::Zoom => {}
                     _ => chosen = Some(row),
                 },
@@ -397,6 +404,7 @@ impl RustAMove {
                     Row::Columns => setup.options.step_columns(step),
                     Row::Zoom => setup.options.step_zoom(step),
                     Row::Motion => setup.options.reduced_motion ^= true,
+                    Row::Flashes => setup.options.reduced_flashes ^= true,
                     row => chosen = Some(row),
                 }
             }
@@ -408,12 +416,12 @@ impl RustAMove {
     }
 
     fn draw_setup(&self, v: &View, setup: &Setup) {
-        v.text_centered(crate::config::APP_NAME, FIELD_W / 2.0, 200.0, 64.0, NEON);
-        v.text_centered(t!("menu.subtitle"), FIELD_W / 2.0, 246.0, 22.0, TEXT);
+        v.text_centered(crate::config::APP_NAME, FIELD_W / 2.0, 170.0, 64.0, NEON);
+        v.text_centered(t!("menu.subtitle"), FIELD_W / 2.0, 214.0, 22.0, TEXT);
         v.text_centered(
             &t!("setup.level", level = self.level),
             FIELD_W / 2.0,
-            310.0,
+            280.0,
             28.0,
             ACCENT,
         );
@@ -428,6 +436,13 @@ impl RustAMove {
                         t!("setup.motion_on").to_owned()
                     } else {
                         t!("setup.motion_off").to_owned()
+                    }
+                }
+                Row::Flashes => {
+                    if o.reduced_flashes {
+                        t!("setup.flashes_on").to_owned()
+                    } else {
+                        t!("setup.flashes_off").to_owned()
                     }
                 }
                 Row::Range => t!("setup.range").to_owned(),

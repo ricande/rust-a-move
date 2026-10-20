@@ -13,6 +13,8 @@ pub const SOUNDS: &[&[u8]] = &[
     include_bytes!("../../assets/sfx/pop.wav"),
     include_bytes!("../../assets/sfx/fall.wav"),
     include_bytes!("../../assets/sfx/ceiling.wav"),
+    include_bytes!("../../assets/sfx/blast.wav"),
+    include_bytes!("../../assets/sfx/chain.wav"),
 ];
 
 pub const LAUNCH: Sfx = Sfx::Game(0);
@@ -21,6 +23,8 @@ pub const ATTACH: Sfx = Sfx::Game(2);
 pub const POP: Sfx = Sfx::Game(3);
 pub const FALL: Sfx = Sfx::Game(4);
 pub const CEILING: Sfx = Sfx::Game(5);
+pub const BLAST: Sfx = Sfx::Game(6);
+pub const CHAIN: Sfx = Sfx::Game(7);
 
 #[cfg(test)]
 mod tests {

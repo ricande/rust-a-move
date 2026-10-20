@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "id": "angry-neighbours",
+  "columns": 8,
+  "seed": 404,
+  "rows": [
+    ["round", "round", "hex", "hex", "block", "block", "oval", "oval"],
+    ["round", "hex", "angry", "hex", "block", "oval", "oval"],
+    [null, "diamond", null, null, "triangle", null, null, null],
+    [null, "diamond", null, null, "triangle", null, null]
+  ]
+}

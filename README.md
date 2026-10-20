@@ -39,16 +39,16 @@ Work in progress, built milestone by milestone
 | M1 | Procedural characters and the animation lab | done |
 | M2 | Board, shared shot prediction, fear aiming, shooting range | done |
 | M3 | Matching, falls, score, ceiling pressure, win/lose and retry | done |
-| M4 | Angry blasts and chain reactions | next |
-| M5 | Runners | planned |
+| M4 | Angry blasts and chain reactions | done |
+| M5 | Runners | next |
 | M6 | Levels, saved options, tutorial | planned |
 | M7 | Recording and platform review, release candidate | planned |
 
-Today the game is playable with ordinary creatures: match three or more,
-drop hanging clusters, beat the descending ceiling, win by clearing the
-board or lose at the danger line – then Retry or go on to the next level.
-Angry and Runners are visible in the animation lab and arrive in levels
-with M4 and M5. The setup screen also opens the **shooting range** (a test
+Today the game is playable: match three or more, drop hanging clusters,
+blow up Angry creatures and set off chain reactions, beat the descending
+ceiling, win by clearing the board or lose at the danger line – then Retry
+or go on to the next level. Runners are visible in the animation lab and
+arrive in levels with M5. The setup screen also opens the **shooting range** (a test
 bench for aiming) and the **animation lab** (every expression and effect).
 
 ### How to play
@@ -58,6 +58,11 @@ bench for aiming) and the **animation lab** (every expression and effect).
 - Shots bounce off the side walls and stick next to what they hit. Three or
   more of the same family disappear (10 points each); everything that no
   longer hangs from the ceiling falls (20 points each).
+- **Angry** (the jagged dark-red one) is always furious and never shows
+  whether you aim at it – and hides everything behind it. Its neighbours
+  look nervous. Hit it directly and it explodes, taking every creature next
+  to it (10 points each); other Angry ones in the blast explode too, in a
+  chain. Angry never matches, and if it falls it does not explode.
 - Every fifth shot the ceiling – and the whole board with it – comes down
   one row. The pips at the top count down to the next drop.
 - Clear the board to win. If any creature reaches the dashed danger line,
@@ -81,8 +86,8 @@ the animation lab.
 Space or Enter start; or the mouse (click the left or right half of a
 setting to lower or raise it). **Play** starts the level. **Width** sets the
 number of creatures in a long row (6–18) and with it their size; **Zoom**
-(75–100 %) scales the whole board. Both, and **Reduced motion**, are saved
-for the next rounds. Esc or P pauses in every mode.
+(75–100 %) scales the whole board. Both, **Reduced motion** and **Reduced
+flashes** (blasts without the white flash) are saved for the next rounds. Esc or P pauses in every mode.
 
 **Playing**
 
@@ -350,10 +355,9 @@ prefix is `config::ENV_PREFIX` (`RUST_A_MOVE` here):
 - In Prioritize gameplay, motion in the video is only as smooth as the
   display's frame rate: at 30 Hz every picture is shown twice. The file is
   60 fps either way.
-- Only ordinary creatures in levels so far: Angry blasts (M4) and runner
-  escapes (M5) are not in the game yet; a direct hit on an Angry in the
-  shooting range only uses up the shot.
-- Three hand-made levels at 8 columns; every other level and width is
+- Runners do not escape in the game yet (M5). On the shooting range a
+  direct hit on an Angry only uses up the shot.
+- Five hand-made levels at 8 columns; every other level and width is
   generated. Generated boards are valid and connected, not proven solvable.
 - Rust a move builds against a patched copy of miniquad 0.4.11 in `vendor/`
   that fixes black text rectangles (macroquad#1006); see

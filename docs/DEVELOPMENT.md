@@ -39,7 +39,8 @@ next to the code in `src/rustamove/`:
 | --- | --- |
 | `geometry` | Layouts for 6–18 columns and 75–100 % zoom fit the board; neighbours are reciprocal and touching; nearest-cell tie-breaks; runner corridors check staggered rows; nearest exit, left on a tie. |
 | `board` | Row-major storage, ids, revisions, no overwriting, ceiling anchoring, ceiling drop by one pitch, danger line. |
-| `round` | R01–R07/R11–R13: three match and two do not; groups across rows; unrelated triples stay; cut branches fall once for fall points; walls hold nothing; a clearing shot wins before the ceiling drops; every fifth shot drops the ceiling; the danger line and blocked shots lose; ammunition follows the board; one sound per kind; presses outside aiming are dropped; rounds are deterministic; random play always ends and the result is stable after the ending hold; level 1 can be won. |
+| `round` | R01–R08/R11–R13, X01, X04, X06–X08: a boxed-in Angry still explodes; chains resolve before falls and score once; a blast through the anchors drops the rest; Angry is inert unless hit; the rules set the radius; blasts lock input until shown, with one blast sound and bounded accents; three match and two do not; groups across rows; unrelated triples stay; cut branches fall once for fall points; walls hold nothing; a clearing shot wins before the ceiling drops; every fifth shot drops the ceiling; the danger line and blocked shots lose; ammunition follows the board; one sound per kind; presses outside aiming are dropped; rounds are deterministic; random play always ends and the result is stable after the ending hold; level 1 can be won. |
+| `blast` | Areas count graph steps through empty cells and never wrap; radius 1, 2 and 3; chains in waves on the snapshot; overlapping and cyclic blasts take each creature and each Angry once; a checkerboard chain climbs one column. |
 | `content` | Curated levels parse and fit at every zoom; bad files are rejected with a reason; width, support and danger are checked; generated boards are valid, connected, reproducible and grow with the level. |
 | `persistence` | Options round-trip; broken, out-of-range and newer files give defaults and a warning and are never rewritten by reading. |
 | `aim` | Pointer clamping, keyboard/mouse ownership, range limits, presses taken once. |
@@ -83,6 +84,7 @@ cargo run --release
 
 | Script | What it does |
 | --- | --- |
+| `scripts/blast_tour.txt` | Plays levels 1–4 in a row: matches, the first Angry blast (level 3) and a three-wave chain (level 4) with pictures every two frames around the blasts, then saves the level-4 video. Run it in Prioritize gameplay. |
 | `scripts/play_tour.txt` | A real game: wins level 1 and saves the video, loses level 1 at the danger line and saves that video, Retry (same board), pause and abort. Its angles come from `cargo test tour_angles -- --ignored --nocapture`. Run it in Prioritize gameplay (below). |
 | `scripts/range_tour.txt` | Shooting range: mouse aim left/right, a shot in flight and landed, a bank shot on the curtain board, keyboard aim, the pocket board, 18 columns, zoom 75 %, pause, results and Save video. Add `RUST_A_MOVE_DEV=1` to see the path overlay in the screenshots. |
 | `scripts/lab_tour.txt` | Animation lab: all eight scenarios with their events, pause, slow motion, reduced motion, results and Save video. |
@@ -115,7 +117,8 @@ Expect `h264,1080,1920,60/1,…` and an AAC stream of the same length.
 | File | Role |
 | --- | --- |
 | `mod.rs` | `RustAMove`, the `Game` implementation: setup screen, mode switching, all game texts (English and Swedish). |
-| `round.rs` | The classic round: phases, firing, `resolve` (attach, match, falls, score, ceiling, danger, win/loss), presentation, HUD. |
+| `round.rs` | The classic round: phases, firing, `resolve` (attach or blast, match, falls, score, ceiling, danger, win/loss), timed presentation and sounds, HUD. |
+| `blast.rs` | The Angry blast area and the chain closure, pure and on a snapshot. |
 | `rules.rs` | The tunable rule values (match size, ceiling interval, scores, timings). |
 | `content.rs` | The level JSON format and its validation, curated levels (`assets/levels/`), the seeded generator. |
 | `persistence.rs` | The game's options file `game-settings.json`. |

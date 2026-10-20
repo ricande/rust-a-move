@@ -13,12 +13,17 @@ use super::board::Board;
 use super::emotion::{Family, Kind, FAMILIES};
 use super::geometry::{Cell, Layout};
 use super::rng::Rng;
-use super::rules::{Rules, CEILING_SHOTS_RANGE};
+use super::rules::{Rules, CEILING_SHOTS_RANGE, EXPLOSION_RADIUS_RANGE};
 
 /// Largest accepted level file.
 const MAX_LEVEL_BYTES: usize = 64 * 1024;
 /// The only schema this build reads.
 const SCHEMA_VERSION: u32 = 1;
+
+/// Generated levels contain Angry creatures from this level on …
+const ANGRY_FROM_LEVEL: u32 = 3;
+/// … each cell with this chance, in percent.
+const ANGRY_PERCENT: u32 = 4;
 
 /// Curated levels by (columns, file). Level n uses the n-th entry of its
 /// width.
@@ -28,7 +33,15 @@ const CURATED: &[(u16, &str)] = &[
         8,
         include_str!("../../assets/levels/8-02-off-the-wall.json"),
     ),
-    (8, include_str!("../../assets/levels/8-03-full-house.json")),
+    (
+        8,
+        include_str!("../../assets/levels/8-03-angry-neighbours.json"),
+    ),
+    (
+        8,
+        include_str!("../../assets/levels/8-04-chain-reaction.json"),
+    ),
+    (8, include_str!("../../assets/levels/8-05-full-house.json")),
 ];
 
 #[derive(Deserialize)]
@@ -47,6 +60,7 @@ struct LevelFile {
 #[serde(deny_unknown_fields)]
 struct RulesOverride {
     ceiling_shots: Option<u32>,
+    explosion_radius: Option<u8>,
 }
 
 /// Why a level cannot be used.
@@ -87,6 +101,7 @@ pub struct Level {
     /// Occupied cells in row-major order.
     pub cells: Vec<(Cell, Kind, bool)>,
     pub ceiling_shots: Option<u32>,
+    pub explosion_radius: Option<u8>,
 }
 
 fn token(t: &str) -> Option<(Kind, bool)> {
@@ -148,10 +163,17 @@ pub fn parse(text: &str) -> Result<Level, LevelError> {
             cells.push((Cell::new(r as u16, c as u16), kind, runner));
         }
     }
-    let ceiling_shots = file.rules_override.and_then(|o| o.ceiling_shots);
+    let (ceiling_shots, explosion_radius) = file
+        .rules_override
+        .map_or((None, None), |o| (o.ceiling_shots, o.explosion_radius));
     if let Some(n) = ceiling_shots {
         if !CEILING_SHOTS_RANGE.contains(&n) {
             return Err(LevelError::Override(format!("ceiling_shots {n}")));
+        }
+    }
+    if let Some(n) = explosion_radius {
+        if !EXPLOSION_RADIUS_RANGE.contains(&n) {
+            return Err(LevelError::Override(format!("explosion_radius {n}")));
         }
     }
     if cells.is_empty() {
@@ -163,6 +185,7 @@ pub fn parse(text: &str) -> Result<Level, LevelError> {
         seed: file.seed,
         cells,
         ceiling_shots,
+        explosion_radius,
     })
 }
 
@@ -206,8 +229,9 @@ pub fn curated(columns: u16, number: u32) -> Option<Level> {
     Some(parse(text).expect("curated levels are valid (tested)"))
 }
 
-/// A connected board of ordinary creatures for `number` on `layout`,
-/// deterministic from `seed`. Higher levels get more rows and families.
+/// A connected board for `number` on `layout`, deterministic from `seed`.
+/// Higher levels get more rows and families, and from level 3 a few Angry
+/// creatures.
 pub fn generate(layout: Layout, number: u32, seed: u64) -> Board {
     let mut rng = Rng::new(seed);
     let families = (3 + (number as usize).saturating_sub(1) / 2).min(FAMILIES.len());
@@ -218,6 +242,10 @@ pub fn generate(layout: Layout, number: u32, seed: u64) -> Board {
     let rows = (3 + number as u16 / 2).clamp(3, 9).min(max_rows);
     let mut b = Board::new(layout);
     let mut grid: Vec<Vec<Option<usize>>> = Vec::new();
+    // A hard cap: about 5 % of the cells, at least one.
+    let cells: u32 = (0..rows).map(|r| layout.row_len(r) as u32).sum();
+    let angry_cap = (cells * 5 / 100).max(1);
+    let mut angry = 0;
     for row in 0..rows {
         let mut line = Vec::new();
         for col in 0..layout.row_len(row) {
@@ -239,6 +267,13 @@ pub fn generate(layout: Layout, number: u32, seed: u64) -> Board {
                 35..=54 if up.is_some() => up.unwrap(),
                 _ => rng.below(families as u32) as usize,
             };
+            // From level 3, a few Angry ones (rule of thumb: at most 5 %).
+            if number >= ANGRY_FROM_LEVEL && angry < angry_cap && rng.below(100) < ANGRY_PERCENT {
+                angry += 1;
+                line.push(None);
+                b.place(Cell::new(row, col), Kind::Angry, false);
+                continue;
+            }
             line.push(Some(f));
             b.place(Cell::new(row, col), Kind::Ordinary(FAMILIES[f]), false);
         }
@@ -274,6 +309,9 @@ pub fn level_board(layout: Layout, number: u32) -> (Board, Rules, u64, Source) {
             if let Some(n) = level.ceiling_shots {
                 rules.ceiling_shots = n;
             }
+            if let Some(n) = level.explosion_radius {
+                rules.explosion_radius = n;
+            }
             return (board, rules, level.seed, Source::Curated(level.id));
         }
     }
@@ -308,8 +346,18 @@ mod tests {
             }
             n += 1;
         }
-        assert!(n >= 3);
-        assert!(curated(8, 1).is_some() && curated(8, 4).is_none() && curated(6, 1).is_none());
+        assert!(n >= 5);
+        assert!(curated(8, 1).is_some() && curated(8, 6).is_none() && curated(6, 1).is_none());
+        // The progression: Angry first appears in level 3, a chain in 4.
+        let angry = |n: u32| {
+            curated(8, n)
+                .unwrap()
+                .cells
+                .iter()
+                .filter(|c| c.1 == Kind::Angry)
+                .count()
+        };
+        assert_eq!((angry(1), angry(2), angry(3), angry(4)), (0, 0, 1, 3));
         assert!(curated(8, 0).is_none());
     }
 
@@ -396,7 +444,7 @@ mod tests {
             for zoom in [0.75, 1.0] {
                 let l = Layout::new(columns, zoom).unwrap();
                 for number in 1..12 {
-                    let (a, _, seed, _) = level_board(l, number);
+                    let (a, _, seed, source) = level_board(l, number);
                     let (b, _, seed2, _) = level_board(l, number);
                     assert_eq!(seed, seed2);
                     let cells =
@@ -405,9 +453,18 @@ mod tests {
                     assert!(a.count() > columns as usize, "{columns} {number}");
                     assert_eq!(a.anchored().len(), a.count(), "connected");
                     assert!(!a.reaches_danger());
-                    assert!(a
-                        .occupied()
-                        .all(|(_, c)| c.kind != Kind::Angry && !c.runner));
+                    assert!(a.occupied().all(|(_, c)| !c.runner), "no runners before M5");
+                    if source == Source::Generated {
+                        let angry = a.occupied().filter(|(_, c)| c.kind == Kind::Angry).count();
+                        if number < ANGRY_FROM_LEVEL {
+                            assert_eq!(angry, 0);
+                        }
+                        assert!(
+                            angry * 100 <= a.count() * 8 + 100,
+                            "Angry stays rare: {angry} of {}",
+                            a.count()
+                        );
+                    }
                 }
             }
         }

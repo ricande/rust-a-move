@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "id": "chain-reaction",
+  "columns": 8,
+  "seed": 505,
+  "rows": [
+    ["oval", "oval", "round", "round", "hex", "hex", "block", "block"],
+    ["oval", "round", "angry", "diamond", "hex", "block", "block"],
+    [null, "triangle", null, "angry", "angry", "triangle", null, null],
+    [null, "triangle", null, null, null, "oval", null]
+  ]
+}

@@ -12,6 +12,7 @@
 use macroquad::math::{vec2, Vec2};
 
 use super::aim::{Aim, Intent};
+use super::blast;
 use super::board::{Board, CreatureId};
 use super::content::{self, Source};
 use super::emotion::{self, Cues, Family, Kind, Mood, RunnerCue, FAMILIES};
@@ -60,6 +61,10 @@ pub struct Resolution {
     pub attached: Option<(Cell, CreatureId)>,
     /// Removed by the match, in row-major order.
     pub matched: Vec<Cell>,
+    /// Removed by a direct Angry hit and its chain, in removal order.
+    pub blasted: Vec<Cell>,
+    /// Number of blast waves (0 without a blast).
+    pub blast_waves: u32,
     /// Removed because nothing held them any more.
     pub fallen: Vec<Cell>,
     /// Every removed creature with where it was, for presentation.
@@ -77,7 +82,21 @@ pub struct Gone {
     pub runner: bool,
     /// Its centre before removal (and before any ceiling drop).
     pub at: Vec2,
-    pub fell: bool,
+    pub cause: Cause,
+    /// Its cosmetic seed, so its last moments move like it did.
+    pub seed: u64,
+}
+
+/// Why a creature left the board.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Cause {
+    Matched,
+    /// In blast wave `wave`; `source` for an Angry that exploded itself.
+    Blast {
+        wave: u32,
+        source: bool,
+    },
+    Fell,
 }
 
 /// A creature leaving the board, shown for a while. Cosmetic only.
@@ -86,15 +105,34 @@ struct Actor {
     kind: Kind,
     runner: bool,
     from: Vec2,
-    start: u64,
-    act: Act,
     seed: u64,
+    act: Act,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum Act {
-    Pop,
-    Fall { vx: f32 },
+    /// Squash from `at`, then fragments.
+    Pop { at: u64 },
+    /// Waits in place until `at`, then tumbles down.
+    Fall { at: u64, vx: f32 },
+    /// Still in place (an Angry smiles from `smile_from`) until `burst_at`,
+    /// then fragments; a `source` also flashes and rings.
+    Blast {
+        smile_from: u64,
+        burst_at: u64,
+        source: bool,
+    },
+}
+
+impl Actor {
+    /// The tick after which the actor is no longer drawn.
+    fn end(&self, rules: &Rules) -> u64 {
+        match self.act {
+            Act::Pop { at } => at + rules.pop_present_ticks + 36,
+            Act::Fall { at, .. } => at + rules.fall_max_ticks,
+            Act::Blast { burst_at, .. } => burst_at + rules.blast_present_ticks,
+        }
+    }
 }
 
 /// Counters for tuning and debugging (docs: prototype measurements).
@@ -104,8 +142,11 @@ pub struct Stats {
     pub fallen: u32,
     pub biggest_fall: u32,
     pub ceiling_drops: u32,
+    pub blasted: u32,
+    pub longest_chain: u32,
 }
 
+#[derive(Clone)]
 pub struct Round {
     pub board: Board,
     pub rules: Rules,
@@ -131,7 +172,11 @@ pub struct Round {
     pub stats: Stats,
     pub end: Option<End>,
     pub reduced_motion: bool,
+    /// A ring and colour pulse instead of a white flash.
+    pub reduced_flashes: bool,
     actors: Vec<Actor>,
+    /// Sounds due at a later tick (blast waves, falls).
+    scheduled: Vec<(u64, Sfx)>,
     /// When the ceiling last dropped, for its slide.
     dropped_at: Option<u64>,
     sounds: Vec<Sfx>,
@@ -174,7 +219,9 @@ impl Round {
             stats: Stats::default(),
             end: None,
             reduced_motion,
+            reduced_flashes: false,
             actors: Vec::new(),
+            scheduled: Vec::new(),
             dropped_at: None,
             sounds: Vec::new(),
         };
@@ -259,7 +306,13 @@ impl Round {
             Phase::Ending(_) => {}
         }
         let now = self.ticks;
-        self.actors.retain(|a| now < a.start + 200);
+        let rules = self.rules;
+        self.actors.retain(|a| now <= a.end(&rules));
+        let (due, later): (Vec<_>, Vec<_>) = std::mem::take(&mut self.scheduled)
+            .into_iter()
+            .partition(|&(t, _)| t <= now);
+        self.scheduled = later;
+        self.sounds.extend(due.into_iter().map(|(_, s)| s));
         self.update_moods();
     }
 
@@ -327,17 +380,27 @@ impl Round {
                 res.attached = Some((cell, id));
                 res.matched = self.match_group(cell);
                 for &c in &res.matched.clone() {
-                    self.take(c, false, &mut res);
+                    self.take(c, Cause::Matched, &mut res);
                 }
             }
-            // A direct hit on Angry: the projectile is used up (its blast
-            // comes in M4).
+            // A direct hit on Angry: the projectile is used up and the
+            // whole chain goes off (rule R06), before any falls.
             (
                 None,
                 Hit::Creature {
-                    kind: Kind::Angry, ..
+                    kind: Kind::Angry,
+                    cell,
+                    ..
                 },
-            ) => {}
+            ) => {
+                let blast = blast::closure(&self.board, cell, self.rules.explosion_radius);
+                res.blast_waves = blast.waves();
+                for &(c, wave) in &blast.removed {
+                    let source = blast.sources.iter().any(|&(s, _)| s == c);
+                    self.take(c, Cause::Blast { wave, source }, &mut res);
+                    res.blasted.push(c);
+                }
+            }
             (None, _) => {
                 res.end = Some(End::Lost(LossReason::Blocked));
             }
@@ -352,10 +415,13 @@ impl Round {
                 .collect();
         }
         for &c in &res.fallen.clone() {
-            self.take(c, true, &mut res);
+            self.take(c, Cause::Fell, &mut res);
         }
-        res.points = res.matched.len() as u64 * self.rules.match_score
+        // Each creature scores once, by the way it left.
+        res.points = (res.matched.len() + res.blasted.len()) as u64 * self.rules.match_score
             + res.fallen.len() as u64 * self.rules.fall_score;
+        self.stats.blasted += res.blasted.len() as u32;
+        self.stats.longest_chain = self.stats.longest_chain.max(res.blast_waves);
         self.score = self.score.saturating_add(res.points);
         self.stats.matched += res.matched.len() as u32;
         self.stats.fallen += res.fallen.len() as u32;
@@ -394,7 +460,7 @@ impl Round {
     }
 
     /// Removes the creature in `cell`, noting it in `res`.
-    fn take(&mut self, cell: Cell, fell: bool, res: &mut Resolution) {
+    fn take(&mut self, cell: Cell, cause: Cause, res: &mut Resolution) {
         let p = self.board.layout.centre(cell);
         if let Some(c) = self.board.remove(cell) {
             res.gone.push(Gone {
@@ -402,7 +468,8 @@ impl Round {
                 kind: c.kind,
                 runner: c.runner,
                 at: vec2(p.x as f32, p.y as f32),
-                fell,
+                cause,
+                seed: c.seed(),
             });
         }
     }
@@ -435,37 +502,61 @@ impl Round {
     }
 
     /// Starts the visible consequences of a resolution and the next phase.
+    /// Everything is already decided; this only times the show.
     fn present(&mut self, res: &Resolution) {
         let now = self.ticks;
-        let fall_at = if res.matched.is_empty() {
-            now
+        let r = self.rules;
+        let burst = |wave: u32| now + wave as u64 * r.blast_wave_ticks + r.blast_smile_ticks;
+        // When the last visible removal has played, before falls start.
+        let removals_done = if res.blast_waves > 0 {
+            burst(res.blast_waves - 1) + r.blast_present_ticks
+        } else if !res.matched.is_empty() {
+            now + r.pop_present_ticks
         } else {
-            now + self.rules.pop_present_ticks / 2
+            now
+        };
+        let fall_at = if res.blast_waves > 0 {
+            burst(res.blast_waves - 1) + r.blast_present_ticks / 2
+        } else if !res.matched.is_empty() {
+            now + r.pop_present_ticks / 2
+        } else {
+            now
         };
         for g in &res.gone {
-            let seed = ((g.cell.row as u64) << 16 | g.cell.col as u64) ^ now.wrapping_mul(31);
+            let act = match g.cause {
+                Cause::Matched => Act::Pop { at: now },
+                Cause::Fell => Act::Fall {
+                    at: fall_at,
+                    vx: (emotion::hash01(g.seed, 3) - 0.5) * 140.0,
+                },
+                Cause::Blast { wave, source } => Act::Blast {
+                    smile_from: burst(wave) - r.blast_smile_ticks,
+                    burst_at: burst(wave),
+                    source,
+                },
+            };
             self.actors.push(Actor {
                 kind: g.kind,
                 runner: g.runner,
                 from: g.at,
-                start: if g.fell { fall_at } else { now },
-                act: if g.fell {
-                    Act::Fall {
-                        vx: (emotion::hash01(seed, 3) - 0.5) * 140.0,
-                    }
-                } else {
-                    Act::Pop
-                },
-                seed,
+                seed: g.seed,
+                act,
             });
         }
-        if !res.matched.is_empty() {
+        // One sound per kind: one blast plus a few accents for later waves,
+        // one pop, one fall.
+        if res.blast_waves > 0 {
+            self.scheduled.push((burst(0), sfx::BLAST));
+            for wave in 1..res.blast_waves.min(r.blast_accents + 1) {
+                self.scheduled.push((burst(wave), sfx::CHAIN));
+            }
+        } else if !res.matched.is_empty() {
             self.sounds.push(sfx::POP);
         } else if res.attached.is_some() {
             self.sounds.push(sfx::ATTACH);
         }
         if !res.fallen.is_empty() {
-            self.sounds.push(sfx::FALL);
+            self.scheduled.push((fall_at, sfx::FALL));
         }
         if res.ceiling_dropped {
             self.dropped_at = Some(now);
@@ -473,25 +564,20 @@ impl Round {
         }
         match res.end {
             Some(end) => {
-                let last = if !res.fallen.is_empty() {
-                    fall_at + self.rules.fall_max_ticks
-                } else if !res.matched.is_empty() {
-                    now + self.rules.pop_present_ticks
+                let last = if res.fallen.is_empty() {
+                    removals_done
                 } else {
-                    now
+                    fall_at + r.fall_max_ticks
                 };
                 self.finish(end, last);
             }
             None => {
-                let mut settle = if res.matched.is_empty() {
-                    self.rules.settle_ticks
-                } else {
-                    self.rules.pop_present_ticks
-                };
+                // No aiming while a smile or blast is still showing.
+                let mut until = removals_done.max(now + r.settle_ticks);
                 if res.ceiling_dropped {
-                    settle = settle.max(self.rules.ceiling_slide_ticks);
+                    until = until.max(now + r.ceiling_slide_ticks);
                 }
-                self.phase = Phase::Settling(now + settle);
+                self.phase = Phase::Settling(until);
             }
         }
     }
@@ -697,11 +783,12 @@ impl Round {
     }
 
     fn draw_actor(&self, v: &View, a: &Actor, r: f32) {
-        let since = (self.ticks as f32 - a.start as f32) * FIXED_DT;
-        let pop = self.rules.pop_present_ticks as f32 * FIXED_DT;
-        let fall_max = self.rules.fall_max_ticks as f32 * FIXED_DT;
+        let secs = |from: u64| (self.ticks as f32 - from as f32) * FIXED_DT;
+        let tick = |n: u64| n as f32 * FIXED_DT;
         match a.act {
-            Act::Pop => {
+            Act::Pop { at } => {
+                let since = secs(at);
+                let pop = tick(self.rules.pop_present_ticks);
                 if since < 0.0 {
                     return;
                 }
@@ -713,9 +800,10 @@ impl Round {
                     render::draw_debris(v, a.from, r, c, since - pop, 0.3, a.seed);
                 }
             }
-            Act::Fall { vx } => {
+            Act::Fall { at, vx } => {
+                let since = secs(at);
                 let s = since.max(0.0);
-                if s > fall_max {
+                if s > tick(self.rules.fall_max_ticks) {
                     return;
                 }
                 let pos = a.from + vec2(vx * s, 1800.0 * s * s * 0.5);
@@ -728,6 +816,41 @@ impl Round {
                     emotion::fall_pose(a.kind, s, a.seed, self.reduced_motion)
                 };
                 render::draw_creature(v, pos, r, a.kind, a.runner, &pose, 1.0);
+            }
+            Act::Blast {
+                smile_from,
+                burst_at,
+                source,
+            } => {
+                let since = secs(burst_at);
+                if since < 0.0 {
+                    // Logically gone already; still shown until its burst.
+                    let t = self.time();
+                    let calm = Cues::default();
+                    let base = emotion::pose(
+                        a.kind,
+                        &calm,
+                        &Mood::default(),
+                        t,
+                        a.seed,
+                        self.reduced_motion,
+                    );
+                    let pose = if !source {
+                        emotion::pop_pose(a.kind, 0.0)
+                    } else if self.ticks >= smile_from {
+                        emotion::blast_smile(base)
+                    } else {
+                        base
+                    };
+                    render::draw_creature(v, a.from, r, a.kind, a.runner, &pose, 1.0);
+                } else {
+                    let life = tick(self.rules.blast_present_ticks);
+                    let c = render::body_color(a.kind);
+                    render::draw_debris(v, a.from, r, c, since, life, a.seed);
+                    if source {
+                        render::draw_blast(v, a.from, r, since, life, self.reduced_flashes);
+                    }
+                }
             }
         }
     }
@@ -897,10 +1020,200 @@ mod tests {
         ]);
         let res = land(&mut r, c(0, 0), OVAL);
         r.present(&res);
-        assert_eq!(r.take_sounds(), vec![sfx::POP, sfx::FALL]);
+        assert_eq!(r.take_sounds(), vec![sfx::POP]);
+        // The fall sounds when the cluster starts to fall, once.
+        let mut later = Vec::new();
+        for _ in 0..200 {
+            r.update();
+            later.extend(r.take_sounds());
+        }
+        assert_eq!(later, vec![sfx::FALL]);
         let res = land(&mut r, c(1, 6), Family::Round);
         r.present(&res);
         assert_eq!(r.take_sounds(), vec![sfx::ATTACH]);
+    }
+
+    /// A direct hit on the Angry in `cell`, as its plan would land.
+    fn hit_angry(r: &mut Round, cell: Cell) -> Resolution {
+        let id = r.board.get(cell).unwrap().id;
+        let plan = ShotPlan {
+            angle: 90.0,
+            segments: vec![Segment {
+                from: LAUNCHER,
+                to: LAUNCHER,
+            }],
+            hit: Hit::Creature {
+                id,
+                cell,
+                kind: Kind::Angry,
+            },
+            attachment: None,
+            travel: 0.0,
+            revision: r.board.revision(),
+        };
+        r.resolve(&plan)
+    }
+
+    fn round_kinds(cells: &[(u16, u16, Kind)]) -> Round {
+        let mut b = Board::new(Layout::new(8, 1.0).unwrap());
+        for &(row, col, k) in cells {
+            b.place(Cell::new(row, col), k, false).unwrap();
+        }
+        Round::with_board(1, b, Rules::default(), 7, Source::Generated, false)
+    }
+
+    const ANGRY: Kind = Kind::Angry;
+    const H: Kind = Kind::Ordinary(HEX);
+
+    /// X01: a direct Angry hit explodes even when every cell around it is
+    /// taken; the projectile is used up and scores nothing.
+    #[test]
+    fn a_boxed_in_angry_still_explodes() {
+        let mut r = round_kinds(&[
+            (0, 2, H),
+            (0, 3, H),
+            (1, 1, H),
+            (1, 2, ANGRY),
+            (1, 3, H),
+            (2, 2, H),
+            (2, 3, H),
+            (0, 7, H),
+        ]);
+        let res = hit_angry(&mut r, c(1, 2));
+        assert_eq!(res.blasted.len(), 7);
+        assert!(res.attached.is_none());
+        assert_eq!(
+            res.points, 70,
+            "ten per removed creature, nothing for the shot"
+        );
+        assert_eq!(r.board.count(), 1);
+        assert_eq!(res.end, None);
+        assert_eq!(r.shots, 1);
+    }
+
+    /// X04/X06 and R07: the whole chain goes before falls are worked out;
+    /// what then hangs free falls once, for fall points.
+    #[test]
+    fn chains_resolve_before_falls_and_score_once() {
+        let mut r = round_kinds(&[
+            (0, 2, H),
+            (1, 2, ANGRY),
+            (1, 3, H),
+            (2, 3, ANGRY),
+            (2, 4, ANGRY),
+            (2, 5, H),
+            (3, 5, Kind::Ordinary(OVAL)),
+            (4, 5, Kind::Ordinary(OVAL)),
+            (0, 7, H),
+            (1, 6, H),
+            (2, 6, H),
+        ]);
+        let res = hit_angry(&mut r, c(2, 4));
+        assert_eq!(res.blast_waves, 3);
+        let mut blasted = res.blasted.clone();
+        blasted.sort();
+        assert_eq!(
+            blasted,
+            vec![c(0, 2), c(1, 2), c(1, 3), c(2, 3), c(2, 4), c(2, 5)]
+        );
+        // (3,5) hung from (2,5) and (2,6); (2,6) still holds it.
+        assert!(res.fallen.is_empty());
+        assert_eq!(res.points, 60);
+        // Each removed creature appears once.
+        let mut gone: Vec<Cell> = res.gone.iter().map(|g| g.cell).collect();
+        gone.sort();
+        let n = gone.len();
+        gone.dedup();
+        assert_eq!(gone.len(), n);
+        assert_eq!(r.stats.longest_chain, 3);
+    }
+
+    /// X08: a blast that takes every ceiling anchor drops everything else.
+    #[test]
+    fn a_blast_through_the_anchors_drops_the_rest() {
+        let mut r = round_kinds(&[(0, 3, H), (0, 4, ANGRY), (1, 3, H), (2, 3, H), (3, 3, H)]);
+        let res = hit_angry(&mut r, c(0, 4));
+        let mut blasted = res.blasted.clone();
+        blasted.sort();
+        assert_eq!(blasted, vec![c(0, 3), c(0, 4), c(1, 3)]);
+        assert_eq!(res.fallen, vec![c(2, 3), c(3, 3)]);
+        assert_eq!(res.points, 3 * 10 + 2 * 20);
+        assert_eq!(res.end, Some(End::Won), "the board is empty");
+    }
+
+    /// R07/R08: an Angry next to a match stays; one cut loose by a match
+    /// falls without exploding.
+    #[test]
+    fn angry_is_inert_unless_hit() {
+        let mut r = round_kinds(&[(0, 0, H), (0, 1, H), (1, 1, ANGRY), (0, 7, H)]);
+        let res = land(&mut r, c(1, 0), HEX);
+        assert_eq!(res.matched.len(), 3);
+        assert!(res.blasted.is_empty());
+        assert_eq!(res.fallen, vec![c(1, 1)], "the Angry falls, inert");
+        assert_eq!(res.points, 3 * 10 + 20);
+        let mut r = round_kinds(&[(0, 0, H), (0, 1, H), (0, 2, ANGRY), (1, 2, H), (0, 7, H)]);
+        let res = land(&mut r, c(1, 0), HEX);
+        assert_eq!(res.matched.len(), 3);
+        assert!(r.board.get(c(0, 2)).is_some(), "a supported Angry stays");
+        assert!(res.blasted.is_empty());
+    }
+
+    /// X03 in the game: radius 2 from the rules reaches further.
+    #[test]
+    fn the_rules_set_the_blast_radius() {
+        let cells = [
+            (0, 0, H),
+            (1, 0, H),
+            (2, 0, H),
+            (3, 0, ANGRY),
+            (4, 0, H),
+            (5, 0, H),
+            (0, 7, H),
+        ];
+        let mut r = round_kinds(&cells);
+        let res = hit_angry(&mut r, c(3, 0));
+        assert_eq!(res.blasted.len(), 3);
+        let mut r = round_kinds(&cells);
+        r.rules.explosion_radius = 2;
+        let res = hit_angry(&mut r, c(3, 0));
+        assert_eq!(res.blasted.len(), 5);
+    }
+
+    /// The chain is shown wave by wave: no aiming until the last burst has
+    /// played, one blast sound and bounded accents, all at their bursts.
+    #[test]
+    fn blasts_lock_input_until_shown_and_sound_per_wave() {
+        let mut r = round_kinds(&[
+            (0, 2, H),
+            (1, 2, ANGRY),
+            (1, 3, H),
+            (2, 3, ANGRY),
+            (2, 4, ANGRY),
+            (0, 7, H),
+            (1, 6, H),
+        ]);
+        let res = hit_angry(&mut r, c(2, 4));
+        r.present(&res);
+        let rules = r.rules;
+        let last_burst = 2 * rules.blast_wave_ticks + rules.blast_smile_ticks;
+        let mut sounds = Vec::new();
+        let mut aiming_at = None;
+        for t in 1..400u64 {
+            r.update();
+            for s in r.take_sounds() {
+                sounds.push((t, s));
+            }
+            if aiming_at.is_none() && r.is_aiming() {
+                aiming_at = Some(t);
+            }
+        }
+        assert!(aiming_at.unwrap() >= last_burst + rules.blast_present_ticks);
+        let kinds: Vec<Sfx> = sounds.iter().map(|&(_, s)| s).collect();
+        assert_eq!(kinds, vec![sfx::BLAST, sfx::CHAIN, sfx::CHAIN]);
+        assert_eq!(
+            sounds[0].0, rules.blast_smile_ticks,
+            "the blast sounds at the burst"
+        );
     }
 
     /// R05/R06: touching a wall does not hold; separate anchored parts stay.
@@ -1176,43 +1489,57 @@ mod tests {
         assert_eq!(r.end, Some(End::Won), "score {} shots {}", r.score, r.shots);
     }
 
-    /// Prints a winning and a losing angle sequence for level 1 at 8
-    /// columns, used by `scripts/play_tour.txt`:
+    /// The angle with the most points for the loaded creature (ties: the
+    /// shorter flight), worked out with the real resolution on a copy.
+    fn best_angle(r: &Round) -> f64 {
+        let mut best: Option<(u64, f64, f64)> = None;
+        for i in 0..=320 {
+            let a = 10.0 + i as f64 * 0.5;
+            let Ok(p) = shot::plan(&r.board, a) else {
+                continue;
+            };
+            if p.attachment.is_none()
+                && p.first_hit().is_some()
+                && !matches!(
+                    p.hit,
+                    Hit::Creature {
+                        kind: Kind::Angry,
+                        ..
+                    }
+                )
+            {
+                continue; // blocked
+            }
+            let mut probe = r.clone();
+            let res = probe.resolve(&p);
+            if matches!(res.end, Some(End::Lost(_))) {
+                continue;
+            }
+            let better = best.is_none_or(|(pts, travel, _)| {
+                res.points > pts || (res.points == pts && p.travel < travel)
+            });
+            if better {
+                best = Some((res.points, p.travel, a));
+            }
+        }
+        best.map_or(90.0, |b| b.2)
+    }
+
+    /// Prints greedy angle sequences that win levels 1–4 at 8 columns
+    /// (used by `scripts/play_tour.txt` and `scripts/blast_tour.txt`), and a
+    /// losing one for level 1:
     /// `cargo test tour_angles -- --ignored --nocapture`.
     #[test]
     #[ignore]
     fn tour_angles() {
-        for want_win in [true, false] {
-            let mut r = Round::new(1, Layout::new(8, 1.0).unwrap(), false);
+        for level in 1..=4 {
+            let mut r = Round::new(level, Layout::new(8, 1.0).unwrap(), false);
             let mut angles = Vec::new();
             for _ in 0..80 {
                 if r.end.is_some() {
                     break;
                 }
-                // Win: biggest match. Lose: no match, as deep as possible.
-                let mut best: Option<(i64, f64)> = None;
-                for i in 0..=320 {
-                    let a = 10.0 + i as f64 * 0.5;
-                    let Ok(p) = shot::plan(&r.board, a) else {
-                        continue;
-                    };
-                    let Some(cell) = p.attachment else { continue };
-                    let mut b = r.board.clone();
-                    b.place(cell, Kind::Ordinary(r.loaded), false);
-                    let probe = Round::with_board(1, b, r.rules, 0, Source::Generated, false);
-                    let n = probe.match_group(cell).len() as i64;
-                    let value = if want_win {
-                        n
-                    } else if n > 0 {
-                        -1
-                    } else {
-                        cell.row as i64
-                    };
-                    if best.is_none_or(|(v, _)| value > v) {
-                        best = Some((value, a));
-                    }
-                }
-                let a = best.unwrap().1;
+                let a = best_angle(&r);
                 angles.push(a);
                 r.aim.set(a);
                 r.update();
@@ -1220,11 +1547,42 @@ mod tests {
                 settle(&mut r);
             }
             println!(
-                "{} {:?}: {:?}",
-                if want_win { "WIN" } else { "LOSE" },
-                r.end,
-                angles
+                "LEVEL {level} {:?} score {} chain {}: {:?}",
+                r.end, r.score, r.stats.longest_chain, angles
             );
         }
+        // Losing level 1: never match, as deep as possible.
+        let mut r = Round::new(1, Layout::new(8, 1.0).unwrap(), false);
+        let mut angles = Vec::new();
+        for _ in 0..80 {
+            if r.end.is_some() {
+                break;
+            }
+            let mut best: Option<(i64, f64)> = None;
+            for i in 0..=320 {
+                let a = 10.0 + i as f64 * 0.5;
+                let Ok(p) = shot::plan(&r.board, a) else {
+                    continue;
+                };
+                let Some(cell) = p.attachment else { continue };
+                let mut probe = r.clone();
+                let res = probe.resolve(&p);
+                let value = if res.matched.is_empty() {
+                    cell.row as i64
+                } else {
+                    -1
+                };
+                if best.is_none_or(|(v, _)| value > v) {
+                    best = Some((value, a));
+                }
+            }
+            let a = best.unwrap().1;
+            angles.push(a);
+            r.aim.set(a);
+            r.update();
+            fire(&mut r);
+            settle(&mut r);
+        }
+        println!("LOSE {:?}: {:?}", r.end, angles);
     }
 }

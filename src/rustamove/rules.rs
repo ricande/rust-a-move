@@ -24,6 +24,16 @@ pub struct Rules {
     pub ceiling_slide_ticks: u64,
     /// Input lock after a shot that matched nothing.
     pub settle_ticks: u64,
+    /// Blast reach in hex-graph steps (1–3); a level may override it.
+    pub explosion_radius: u8,
+    /// Angry's smile before its burst.
+    pub blast_smile_ticks: u64,
+    /// Delay between the waves of a chain.
+    pub blast_wave_ticks: u64,
+    /// Flash, ring and fragments of one burst.
+    pub blast_present_ticks: u64,
+    /// At most this many extra sound accents for later waves of a chain.
+    pub blast_accents: u32,
 }
 
 impl Default for Rules {
@@ -38,9 +48,16 @@ impl Default for Rules {
             ending_hold_ticks: 96,
             ceiling_slide_ticks: 30,
             settle_ticks: 12,
+            explosion_radius: 1,
+            blast_smile_ticks: 7,
+            blast_wave_ticks: 12,
+            blast_present_ticks: 42,
+            blast_accents: 3,
         }
     }
 }
 
 /// Allowed range for a level's `ceiling_shots` override.
 pub const CEILING_SHOTS_RANGE: std::ops::RangeInclusive<u32> = 2..=20;
+/// Allowed explosion radius (1 is the default; 2 and 3 are for testing).
+pub const EXPLOSION_RADIUS_RANGE: std::ops::RangeInclusive<u8> = 1..=3;

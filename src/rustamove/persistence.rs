@@ -27,6 +27,8 @@ pub struct Options {
     /// Board zoom in percent (75–100).
     pub board_zoom: u32,
     pub reduced_motion: bool,
+    /// A ring and colour pulse instead of a white flash in blasts.
+    pub reduced_flashes: bool,
 }
 
 impl Default for Options {
@@ -36,6 +38,7 @@ impl Default for Options {
             columns: 8,
             board_zoom: 100,
             reduced_motion: false,
+            reduced_flashes: false,
         }
     }
 }

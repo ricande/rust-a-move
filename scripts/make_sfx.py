@@ -87,6 +87,10 @@ def main():
     write("fall.wav", tone(900, 260, 0.38, 0.35, "tri", 1.2, 0.01))
     # Ceiling drop: a heavy clunk with rumble.
     write("ceiling.wav", mix(tone(110, 55, 0.35, 0.8, "sine", 2.5), noise(0.25, 0.3, 2.0, seed=5, smooth=0.9)))
+    # Blast: a puff of noise over a dropping boom.
+    write("blast.wav", mix(noise(0.45, 0.7, 1.6, seed=6, smooth=0.5), tone(160, 40, 0.45, 0.8, "sine", 1.8)))
+    # Chain accent: a shorter, higher crack for the later waves.
+    write("chain.wav", mix(noise(0.18, 0.6, 2.2, seed=7, smooth=0.3), tone(320, 120, 0.18, 0.5, "tri", 2.0)))
 
 
 if __name__ == "__main__":

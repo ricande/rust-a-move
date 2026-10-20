@@ -1,0 +1,161 @@
+# Plays levels 1-4 of Rust a move in a row at 8 columns (M4): matches,
+# a first Angry blast in level 3 and a three-wave chain in level 4, with
+# dense screenshots around the blasts, then saves the level-4 video.
+# Angles from `cargo test tour_angles -- --ignored --nocapture`. Use
+# Prioritize gameplay ({"recording_mode": "gameplay"} in the data folder's
+# settings.json) so every frame is exactly two game steps. Run with temp
+# folders (see docs/DEVELOPMENT.md):
+#   RUST_A_MOVE_SCRIPT=scripts/blast_tour.txt RUST_A_MOVE_SHOTS=/tmp/ram/shots \
+#   RUST_A_MOVE_DATA_DIR=/tmp/ram/data RUST_A_MOVE_VIDEO_DIR=/tmp/ram/videos cargo run --release
+
+5     click 270 526   # Play
+15    shot L1-00-setup
+16    key space       # Play level 1
+40    shot L1-01-start
+41    move 332.3735 556.5557
+61    shot L1-s1-aim
+62    click 332.3735 556.5557
+170   shot L1-s1-after
+171   move 192.3543 560.2223
+191   shot L1-s2-aim
+192   click 192.3543 560.2223
+301   shot L1-s2-after
+302   move 301.3585 551.6434
+322   shot L1-s3-aim
+323   click 301.3585 551.6434
+430   shot L1-s3-after
+431   move 197.4234 558.9113
+451   shot L1-s4-aim
+452   click 197.4234 558.9113
+560   shot L1-s4-after
+561   move 207.6265 556.5557
+581   shot L1-s5-aim
+582   click 207.6265 556.5557
+690   shot L1-s5-after
+691   move 298.7537 551.3811
+711   shot L1-s6-aim
+712   click 298.7537 551.3811
+819   shot L1-s6-after
+969   shot L1-results
+970   click 270 726   # Next round
+980   shot L2-00-setup
+981   key space       # Play level 2
+1005  shot L2-01-start
+1006  move 215.3293 555.0235
+1026  shot L2-s1-aim
+1027  click 215.3293 555.0235
+1135  shot L2-s1-after
+1136  move 324.6707 555.0235
+1156  shot L2-s2-aim
+1157  click 324.6707 555.0235
+1265  shot L2-s2-after
+1266  move 417.7271 588.8933
+1286  shot L2-s3-aim
+1287  click 417.7271 588.8933
+1401  shot L2-s3-after
+1402  move 426.7496 594.2080
+1422  shot L2-s4-aim
+1423  click 426.7496 594.2080
+1538  shot L2-s4-after
+1539  move 192.3543 560.2223
+1559  shot L2-s5-aim
+1560  click 192.3543 560.2223
+1669  shot L2-s5-after
+1819  shot L2-results
+1820  click 270 726   # Next round
+1830  shot L3-00-setup
+1831  key space       # Play level 3
+1855  shot L3-01-start
+1856  move 243.8533 551.1416
+1876  shot L3-s1-aim
+1877  click 243.8533 551.1416
+1903  shot L3-s1-blast-26
+1905  shot L3-s1-blast-28
+1907  shot L3-s1-blast-30
+1909  shot L3-s1-blast-32
+1911  shot L3-s1-blast-34
+1913  shot L3-s1-blast-36
+1915  shot L3-s1-blast-38
+1917  shot L3-s1-blast-40
+1919  shot L3-s1-blast-42
+1921  shot L3-s1-blast-44
+1923  shot L3-s1-blast-46
+1925  shot L3-s1-blast-48
+1927  shot L3-s1-blast-50
+1929  shot L3-s1-blast-52
+1931  shot L3-s1-blast-54
+1933  shot L3-s1-blast-56
+1935  shot L3-s1-blast-58
+1937  shot L3-s1-blast-60
+1939  shot L3-s1-blast-62
+1941  shot L3-s1-blast-64
+1943  shot L3-s1-blast-66
+1945  shot L3-s1-blast-68
+1947  shot L3-s1-blast-70
+1949  shot L3-s1-blast-72
+1984  shot L3-s1-after
+1985  move 167.3940 568.0922
+2005  shot L3-s2-aim
+2006  click 167.3940 568.0922
+2116  shot L3-s2-after
+2117  move 301.3585 551.6434
+2137  shot L3-s3-aim
+2138  click 301.3585 551.6434
+2245  shot L3-s3-after
+2246  move 301.3585 551.6434
+2266  shot L3-s4-aim
+2267  click 301.3585 551.6434
+2374  shot L3-s4-after
+2375  move 296.1467 551.1416
+2395  shot L3-s5-aim
+2396  click 296.1467 551.1416
+2503  shot L3-s5-after
+2653  shot L3-results
+2654  click 270 726   # Next round
+2664  shot L4-00-setup
+2665  key space       # Play level 4
+2689  shot L4-01-start
+2690  move 285.7008 550.4111
+2710  shot L4-s1-aim
+2711  click 285.7008 550.4111
+2737  shot L4-s1-blast-26
+2739  shot L4-s1-blast-28
+2741  shot L4-s1-blast-30
+2743  shot L4-s1-blast-32
+2745  shot L4-s1-blast-34
+2747  shot L4-s1-blast-36
+2749  shot L4-s1-blast-38
+2751  shot L4-s1-blast-40
+2753  shot L4-s1-blast-42
+2755  shot L4-s1-blast-44
+2757  shot L4-s1-blast-46
+2759  shot L4-s1-blast-48
+2761  shot L4-s1-blast-50
+2763  shot L4-s1-blast-52
+2765  shot L4-s1-blast-54
+2767  shot L4-s1-blast-56
+2769  shot L4-s1-blast-58
+2771  shot L4-s1-blast-60
+2773  shot L4-s1-blast-62
+2775  shot L4-s1-blast-64
+2777  shot L4-s1-blast-66
+2779  shot L4-s1-blast-68
+2781  shot L4-s1-blast-70
+2783  shot L4-s1-blast-72
+2818  shot L4-s1-after
+2819  move 167.3940 568.0922
+2839  shot L4-s2-aim
+2840  click 167.3940 568.0922
+2950  shot L4-s2-after
+2951  move 322.0945 554.5577
+2971  shot L4-s3-aim
+2972  click 322.0945 554.5577
+3080  shot L4-s3-after
+3081  move 283.0858 550.2855
+3101  shot L4-s4-aim
+3102  click 283.0858 550.2855
+3209  shot L4-s4-after
+3359  shot L4-results
+3360  click 152 586   # Save video of level 4
+3480  shot L4-saved
+3481  quit

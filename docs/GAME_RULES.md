@@ -2,7 +2,7 @@
 
 Normative prototype rules for Rust a move. CONFIRMED mechanics and PROPOSED defaults are classified in [game/01_DECISIONS.md](game/01_DECISIONS.md). All numbers referenced here are supplied by [game/05_CONFIGURATION_CONTENT.md](game/05_CONFIGURATION_CONTENT.md). Geometry and implementation detail: [game/03_TECHNICAL_DESIGN.md](game/03_TECHNICAL_DESIGN.md); characters and animation: [game/04_CHARACTERS_ANIMATION.md](game/04_CHARACTERS_ANIMATION.md).
 
-**Implementation status:** M3. The classic round plays R01–R05, R07, R11–R14 with ordinary creatures: aiming by fear, matching, falls, score, ceiling pressure, danger line, blocked boards, the ending hold, win/loss and Retry. Not yet: Angry blasts (R06, M4; a direct Angry hit only uses up the shot), Angry and runners in levels (R08–R10, M4–M5), reduced flashes. Framework behaviour (pause with Esc/P, results, recording) is described in the README.
+**Implementation status:** M4. The classic round plays R01–R08 and R11–R14: aiming by fear, matching, falls, score, Angry blasts with chain reactions (radius 1, levels may set 1–3), nervous neighbours, ceiling pressure, danger line, blocked boards, the ending hold, win/loss and Retry, reduced motion and reduced flashes. Not yet: runner escapes (R09–R10, M5); runners appear only in the animation lab. Framework behaviour (pause with Esc/P, results, recording) is described in the README.
 
 ## R01 — Objective and board
 

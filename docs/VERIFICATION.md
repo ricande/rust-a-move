@@ -66,8 +66,21 @@ Commit `1a4184d`.
 | Hands-on play with a real mouse; whether a 4 s flat bank shot feels too slow | **NOT RUN** (worth a playtest) |
 | Pressure every five shots: fun or frustrating? | **NOT RUN** (OPEN product choice) |
 
+## M4 – Angry and chain reactions
+
+| Check | Result |
+| --- | --- |
+| fmt, clippy, tests (164), vendored check, build with Rust 1.87 | PASS |
+| Blast tests X01–X08, R07–R08, radius 1/2/3, one sound per kind, input locked until the last burst | PASS |
+| `scripts/blast_tour.txt` on the real display (Prioritize gameplay): levels 1–4 won in a row with the predicted scores (260, 280, 250, 270); level-4 video saved | PASS |
+| Level 3: aiming at the Angry shows no reaction while its hex neighbours look nervous; blast: white flash, ring and fragments, the six around it gone | PASS (screenshots) |
+| Level 4: chain of three in waves 0.1 s apart; the third Angry's evil grin (furious brows kept) one frame pair before its burst; victims frozen in fear until their wave; the loose oval falls; score 110 = 9 × 10 + 1 × 20 | PASS (screenshots every two frames) |
+| A test assumption that was wrong: in a checkerboard each Angry touches only one other Angry up and one down, so the chain is a column. The test now checks that, and a separate cyclic test checks overlap | test corrected (logic was right) |
+| Reduced flashes judged by a person; blast and chain sounds heard | **NOT RUN** |
+| Whether chains feel rewarding and the smile is noticeable at normal speed | **NOT RUN** (playtest) |
+
 ## Not yet verifiable
 
-Angry blasts (M4); runner escapes in the game (M5); level progression,
+Runner escapes in the game (M5); level progression,
 tutorial and quality settings (M6); full recording-mode and platform review
 (M7).

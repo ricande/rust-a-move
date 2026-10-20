@@ -57,6 +57,14 @@ All notable changes to Rust a move are documented here.
 - `scripts/play_tour.txt`: win, loss, Retry, pause and abort with saved
   videos.
 
+- **Angry blasts (M4):** a direct hit on an Angry blows up every creature
+  next to it (radius 1, levels may set 1–3) and sets off other Angry ones
+  in a chain, decided at once on a snapshot and shown wave by wave with a
+  smile, flash, ring and fragments; falls follow the whole chain. Blast and
+  chain sounds. Two new hand-made levels (angry neighbours, chain reaction),
+  a few Angry in generated levels from level 3, and a Reduced flashes
+  option on the setup screen. `scripts/blast_tour.txt`.
+
 ### Removed
 
 - The template's example game and its assets (`paw.png`, `chime.wav`).
