@@ -52,6 +52,17 @@ Exercise all inherited recording modes with full gameplay SFX and terminal holds
 
 **Gate:** required formatting/clippy/tests, vendored integrity check and FFmpeg-enabled checks pass; real videos are 1080×1920 at 60 fps with synchronized sound; pause/abort/limit behaviour is retained. README, rules, patch ledger and changelog match the actual game. List unavailable checks explicitly.
 
+## After M7
+
+Built after the release candidate, at the user's request:
+
+- **Effects: maximum** – a third effects level (twice the fragments, a
+  shock-wave ring in blasts); cosmetic only.
+- **Level editor** – listed as DEFERRED in `01_DECISIONS.md`, now built: paint
+  families, Angry and runners, live validation, test play with the real
+  rules, nine save slots in the level format, per-level ceiling interval and
+  blast radius. See the README and `docs/VERIFICATION.md`.
+
 ## Review packet at each milestone
 
 Report what works, files changed, exact tests run/results, manual evidence, unresolved risks and next milestone. Cite actual commit when one exists. Do not write a large diary or claim tests run on machines not accessible. Ask for decisions only when they block the next concrete milestone; do not ask the user to reapprove already confirmed mechanics.

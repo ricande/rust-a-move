@@ -10,7 +10,7 @@ All values here are PROPOSED prototype defaults. Store constants once in validat
 | Board zoom | 100% / 75–100% | Uniform scale of cell geometry within the board area; lower zoom creates smaller creatures and a narrower centred board. |
 | Reduced motion | Off | Reduces shaking, tumbling and recoil; retains expression-based fear. |
 | Reduced flashes | Off | Replaces explosion flash with a ring and colour pulse. |
-| Visual quality | Normal / Low, Normal | Debris density only; never changes rules or essential cues. |
+| Effects (visual quality) | Normal / fewer, normal, maximum | Fragments per removed creature 3 / 7 / 14, and at maximum a shock-wave ring in blasts. Never changes rules or essential cues. |
 
 The width control changes topology/difficulty; zoom changes presentation geometry and world-unit distances uniformly, not speed in diameters/second. Explain both in EN/SV tooltips and show a preview. Do not offer a separate raw radius slider that contradicts the selected N. Reject invalid values with a visible explanation and restore the last valid configuration. Structural edits apply on Start/new round; do not resize occupied boards in place.
 
@@ -54,12 +54,17 @@ Use `<game data dir>/game-settings.json`; framework settings.json remains owned 
 {
   "schema_version": 1,
   "columns": 8,
-  "board_zoom": 1.0,
+  "board_zoom": 100,
   "reduced_motion": false,
   "reduced_flashes": false,
   "visual_quality": "normal"
 }
 ```
+
+As implemented: `board_zoom` is a whole percentage in 5 % steps (75–100);
+`visual_quality` is `"low"`, `"normal"` or `"maximum"`. Level-editor slots
+are separate files, `levels/custom-1.json` … `custom-9.json` in the same
+data folder, in the level format below.
 
 Deserialize with defaults for missing fields; unknown fields may be ignored for forward-compatible reads. Unsupported schema versions and bad types yield defaults plus a nonfatal localized warning. Reject NaN/infinite values and out-of-range geometry after decoding. Write atomically through temporary file + rename using the existing template pattern. Do not overwrite a corrupt/newer file automatically just because it was read; write only on explicit setup Save/Start. No simulation save-game promise in v1.
 

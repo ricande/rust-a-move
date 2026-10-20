@@ -127,6 +127,20 @@ Wayland. Display 3440 × 1440 at 100 Hz. Rust 1.99.0 and 1.87; FFmpeg 8.0.1
 | Windows graphical run | **NOT RUN** (CI only) |
 | Hands-on play by a person with mouse and keyboard; sounds listened to | **NOT RUN** |
 
+## After M7 – Effects: maximum and the level editor
+
+| Check | Result |
+| --- | --- |
+| fmt, clippy, tests (192), vendored check, build with Rust 1.87; CI on Linux, Windows, macOS | PASS |
+| Effects: stepping fewer ↔ normal ↔ maximum, Space going round, saved as `"maximum"` | PASS (tests) |
+| Level 3 blast on the real display at normal and maximum: maximum shows twice the fragments and the extra shock-wave ring | PASS (screenshots) |
+| Level writer: every curated level, written and read back, is identical; a custom level with a runner, an Angry and overrides round-trips | PASS (tests) |
+| Editor tests: painting, replacing, erasing, undo (a drag is one step), runners and keyboard painting, nothing below the danger line, empty or loose levels cannot be tested, test play returns with the level untouched, save/load/empty/broken slots, value ranges, button layout | PASS |
+| A bug the editor tests caught: an empty board could be test-played (the level builder does not check emptiness; parsing does). Testing now uses the editor's own check | fixed |
+| `scripts/editor_tour.txt` on the real display, English and Swedish: paint a level, a loose creature ringed in red and the status "1 hanging loose", erase it ("Ready to test"), save in slot 2 (the file is a valid level), test play with a shot, back to the editor, clear, load (identical), back to the setup screen | PASS |
+| Found while verifying: the test banner sat on the ceiling stripes (moved to its own dark strip at the bottom); a tour click hit the wrong button (script fixed) | fixed |
+| The editor used by a person to make a level | **NOT RUN** |
+
 ## Not yet verifiable
 
 Everything above marked NOT RUN. Balancing (pressure interval, runner
