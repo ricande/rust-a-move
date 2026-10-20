@@ -374,7 +374,7 @@ dependencies = [
 
 [[package]]
 name = "rust-a-move"
-version = "0.1.0"
+version = "0.1.0-rc.1"
 dependencies = [
  "macroquad",
  "serde",

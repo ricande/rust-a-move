@@ -1,0 +1,34 @@
+# Recording check (M7): wins level 1 (8 columns) with generous waits, so
+# it plays the same in every recording mode, even when Prioritize
+# recording slows the game for the encoder; then saves the video. Without
+# FFmpeg, or with a failing one, the round must play on and the results
+# must explain. Run with temp folders and a recording_mode in the data
+# folder's settings.json (see docs/DEVELOPMENT.md):
+#   RUST_A_MOVE_SCRIPT=scripts/record_tour.txt RUST_A_MOVE_SHOTS=/tmp/ram/shots \
+#   RUST_A_MOVE_DATA_DIR=/tmp/ram/data RUST_A_MOVE_VIDEO_DIR=/tmp/ram/videos cargo run --release
+
+5     click 270 526   # Play
+35    key space       # Play level 1
+95    shot c01-start
+96    move 332.3735 556.5557
+126   click 332.3735 556.5557
+366   shot c02-after-shot-1
+367   move 192.3543 560.2223
+397   click 192.3543 560.2223
+637   shot c03-after-shot-2
+638   move 301.3585 551.6434
+668   click 301.3585 551.6434
+908   shot c04-after-shot-3
+909   move 197.4234 558.9113
+939   click 197.4234 558.9113
+1179  shot c05-after-shot-4
+1180  move 207.6265 556.5557
+1210  click 207.6265 556.5557
+1450  shot c06-after-shot-5
+1451  move 298.7537 551.3811
+1481  click 298.7537 551.3811
+1721  shot c07-after-shot-6
+2021  shot c10-results
+2022  click 152 586   # Save video
+2322  shot c11-saved
+2323  quit

@@ -1,33 +1,37 @@
 # A tour of the whole flow, for checking the UI and the recording:
-#   RUSTYHUSKY_SCRIPT=scripts/ui_tour.txt RUSTYHUSKY_SHOTS=/tmp/shots \
-#   RUSTYHUSKY_DATA_DIR=/tmp/rh-data RUSTYHUSKY_VIDEO_DIR=/tmp/rh-videos \
+#   RUST_A_MOVE_SCRIPT=scripts/ui_tour.txt RUST_A_MOVE_SHOTS=/tmp/shots \
+#   RUST_A_MOVE_DATA_DIR=/tmp/ram-data RUST_A_MOVE_VIDEO_DIR=/tmp/ram-videos \
 #   cargo run --release
 # Positions are logical coordinates (540 x 960); see the button functions in
-# src/app.rs. One frame is 1/60 s.
+# src/app.rs and `row_rect` in src/rustamove/mod.rs. One frame is 1/60 s.
+# Rust a move: a round opens the game's setup screen; the tour takes the
+# animation lab there, where Enter ends the round.
 
 5   shot 01-menu
 6   click 270 590             # Settings
 10  shot 02-settings
 11  key esc
 15  click 270 526             # Play
-20  key space                 # the example scores a point (with a sound)
-60  key space
-90  shot 03-playing
+20  shot 03-setup
+21  click 270 748             # Animation lab
+60  key space                 # the lab's event
+90  shot 04-playing
 100 key esc                   # pause: these frames are left out of the video
-110 shot 04-paused
+110 shot 05-paused
 130 key esc                   # resume
-200 key enter                 # finish the level
-201 shot 05-results-finishing
-240 shot 06-results-ready
+200 key enter                 # finish the round
+201 shot 06-results-finishing
+240 shot 07-results-ready
 241 click 152 586             # Save video
-300 shot 07-saved
+300 shot 08-saved
 301 click 270 726             # Next round
+310 click 270 748             # Animation lab
 360 key p
-361 shot 08-paused-round-2
+361 shot 09-paused-round-2
 365 click 270 550             # Abort round
-400 shot 09-aborted
+400 shot 10-aborted
 401 click 388 586             # Discard video
-405 shot 10-discarded
+405 shot 11-discarded
 406 click 270 726             # Main menu (the only button after an abort)
-410 shot 11-menu
+410 shot 12-menu
 411 quit

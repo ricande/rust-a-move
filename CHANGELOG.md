@@ -4,6 +4,11 @@ All notable changes to Rust a move are documented here.
 
 ## [Unreleased]
 
+## [0.1.0-rc.1] – 2026-10-20
+
+First release candidate: every rule of the design in the game, reviewed on
+Linux (see docs/VERIFICATION.md).
+
 ### Changed
 
 - The project is named *Rust a move* (id `rust-a-move`, environment prefix
@@ -78,6 +83,10 @@ All notable changes to Rust a move are documented here.
   (normal / fewer fragments); a How to play page; a one-line hint on each
   teaching level until the first shot; a known valid fallback board for
   the generator. `scripts/setup_tour.txt`.
+
+- Release review (M7): all recording modes, missing and hanging encoders,
+  frame time on the largest board, host record; `scripts/record_tour.txt`;
+  the template tours adapted to the setup screen (patch P4).
 
 ### Removed
 

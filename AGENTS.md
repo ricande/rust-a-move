@@ -73,7 +73,7 @@ Run with `cargo run --release`. If `cargo` is not on `PATH`, it is in
    Slow work stays on worker threads. Temporary files are always removed
    (Discard, leaving the results, closing the program).
 9. **Test what you add.** Flow changes get tests in `app.rs`, using the
-   example game. Tests that use files use `crate::tests::temp_dir`, never the
+   framework's own test game. Tests that use files use `crate::tests::temp_dir`, never the
    user's folders. Tests run in parallel threads; the language is
    thread-local, so change it only on a thread you spawn yourself. Do not set
    environment variables in tests.

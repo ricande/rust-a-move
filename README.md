@@ -29,7 +29,10 @@ first is visibly terrified instead – so you aim by reading faces.
 
 ## Status
 
-Work in progress, built milestone by milestone
+Release candidate 0.1.0-rc.1: every rule of the design is in the game,
+checked on Linux (Intel UHD 630) with all recording modes. Not yet
+playtested by people or run by hand on macOS or Windows (see the
+verification record). Built milestone by milestone
 ([implementation plan](docs/game/06_IMPLEMENTATION_PLAN.md),
 [verification record](docs/VERIFICATION.md)):
 
@@ -42,7 +45,7 @@ Work in progress, built milestone by milestone
 | M4 | Angry blasts and chain reactions | done |
 | M5 | Runners | done |
 | M6 | Levels, saved options, tutorial | done |
-| M7 | Recording and platform review, release candidate | next |
+| M7 | Recording and platform review, release candidate | done: **0.1.0-rc.1** |
 
 Today the game is playable: match three or more, drop hanging clusters,
 blow up Angry creatures and set off chain reactions, watch runners escape,
@@ -373,6 +376,8 @@ prefix is `config::ENV_PREFIX` (`RUST_A_MOVE` here):
   or two warnings (depending on the platform) from miniquad's own, unchanged
   code.
 - The video sound contains only the game's synthesized effects.
+- On Linux the game runs through X11; on a Wayland desktop that means
+  XWayland (miniquad's Wayland backend is not used).
 - The start window size is fitted to the screen on X11/XWayland (via `xprop`
   and `xrandr`); elsewhere it starts at 360 × 640. It can always be resized.
 - The built-in font covers Latin text (English and Swedish), not every script.

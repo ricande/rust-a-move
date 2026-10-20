@@ -1,6 +1,6 @@
 [package]
 name = "rust-a-move"
-version = "0.1.0"
+version = "0.1.0-rc.1"
 edition = "2021"
 rust-version = "1.87"
 description = "Rust a move: a portrait aim-and-match game with grumpy geometric creatures, built on the RustyHusky template"

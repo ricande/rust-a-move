@@ -101,6 +101,33 @@ Commit `1a4184d`.
 | A tour script mistake (one Down too many) was caught by checking the saved options file | fixed |
 | Whether the hints teach well and the help page is enough for a new player | **NOT RUN** (needs a person) |
 
+## M7 – Recording, platform review and release candidate
+
+**Host record.** HP EliteDesk 800 G6, Intel Core i5-10500T (12 threads),
+Intel UHD Graphics 630 (Comet Lake GT2), Mesa 26.0.8, OpenGL 4.6;
+Ubuntu 26.04.1 LTS with KDE Plasma on Wayland. miniquad's Linux backend is
+X11-only by default, so the game ran through **XWayland**, not native
+Wayland. Display 3440 × 1440 at 100 Hz. Rust 1.99.0 and 1.87; FFmpeg 8.0.1
+(libx264).
+
+| Check | Result |
+| --- | --- |
+| fmt, clippy, tests (180), vendored check, build with Rust 1.87 | PASS |
+| CI on Linux, Windows and macOS for every milestone push (M3–M6) | PASS |
+| `scripts/record_tour.txt`, Prioritize recording: level 1 won, video saved: 1080 × 1920, 60/1 fps, 1 572 frames, all 1 572 distinct; AAC 26.2 s = video 26.2 s; sound present (13 sound events, mean −33 dB, peak −6 dB) | PASS |
+| Same, Prioritize gameplay: identical frame count, all distinct, identical sound levels (same game, same sound timeline) | PASS |
+| Recording mode Off: round played to the win; results "Recording mode is Off" | PASS |
+| Missing FFmpeg (`RUST_A_MOVE_FFMPEG=/nonexistent`): round played to the win; results explain that FFmpeg was not found | PASS |
+| Hanging fake encoder, Prioritize gameplay: "Recording stopped" in the window, the round went on to the win, results "Recording failed: the video encoder could not keep up"; no encoder process or `rust-a-move-rec-*` file left | PASS |
+| Hanging fake encoder, Prioritize recording: the game waited for the encoder (the template's 5 s limit), then "Recording stopped" and play went on; the script's fixed clicks then fell at other moments, so that run did not reach the end within the script (expected for the mode; not a game fault) | PASS (behaviour as designed) |
+| Frame time, largest board (shooting range "pocket", 18 columns, ~120 creatures, the aim moving every frame so fear and planning are recomputed), recording Off: 10.0 ms per frame = the monitor's 100 Hz vsync, at 540 × 960, 607 × 1080 and 1080 × 1920 windows; with vsync off (`vblank_mode=0`) 2.9 ms per frame (about 350 fps) against the 16.7 ms (60 fps) target | PASS |
+| Template tours `ui_tour.txt` (menu, settings, setup, pause, results, Save, Next round, abort, Discard) and `window_check.txt` (Swedish, 1000 × 640, side-bar clicks ignored, window-pixel clicks reach the setup rows) | PASS |
+| The 3:00 video limit and Save/Discard edge cases | covered by the framework's tests (unchanged), not re-run by hand |
+| macOS (Apple Silicon) graphical run | **NOT RUN** (no access; CI builds and tests on macOS) |
+| Windows graphical run | **NOT RUN** (CI only) |
+| Hands-on play by a person with mouse and keyboard; sounds listened to | **NOT RUN** |
+
 ## Not yet verifiable
 
-Full recording-mode and platform review, release candidate (M7).
+Everything above marked NOT RUN. Balancing (pressure interval, runner
+delay, blast radius) waits for playtests.

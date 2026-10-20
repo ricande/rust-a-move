@@ -66,6 +66,17 @@ checkout was clean at this commit when the game was created on 2026-10-18).
   existing flow tests updated.
 - **Upstream:** generic; a candidate for RustyHusky (not offered).
 
+### P4 — Template tour scripts adapted (M7)
+
+- **Files:** `scripts/ui_tour.txt`, `scripts/window_check.txt` (copied by
+  `scripts/update-framework.sh`).
+- **Change:** after Play they open the animation lab from the game's setup
+  screen (where Enter ends a round), and use the `RUST_A_MOVE_` prefix.
+  The flow they check (menu, settings, pause, results, Save/Discard, next
+  round, abort, letterboxing and window-pixel clicks) is unchanged.
+- **Why:** they were written for the template's placeholder game.
+- **Check:** both run through to the end (docs/VERIFICATION.md, M7).
+
 ## Known template notes
 
 - The `Game::handle` comment says it is called once per displayed frame;

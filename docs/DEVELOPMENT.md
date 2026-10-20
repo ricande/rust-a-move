@@ -90,7 +90,8 @@ cargo run --release
 | `scripts/play_tour.txt` | A real game: wins level 1 and saves the video, loses level 1 at the danger line and saves that video, Retry (same board), pause and abort. Its angles come from `cargo test tour_angles -- --ignored --nocapture`. Run it in Prioritize gameplay (below). |
 | `scripts/range_tour.txt` | Shooting range: mouse aim left/right, a shot in flight and landed, a bank shot on the curtain board, keyboard aim, the pocket board, 18 columns, zoom 75 %, pause, results and Save video. Add `RUST_A_MOVE_DEV=1` to see the path overlay in the screenshots. |
 | `scripts/lab_tour.txt` | Animation lab: all eight scenarios with their events, pause, slow motion, reduced motion, results and Save video. |
-| `scripts/ui_tour.txt`, `scripts/window_check.txt` | The template's tours of menus, settings and letterboxing (their game actions were written for the template's placeholder game). |
+| `scripts/record_tour.txt` | Wins level 1 with generous waits so it plays the same in every recording mode; saves the video. Used with each `recording_mode`, a hanging fake encoder and a missing FFmpeg. |
+| `scripts/ui_tour.txt`, `scripts/window_check.txt` | The template's tours of menus, settings, pause, results, Save/Discard, abort and letterboxing (window-pixel clicks), adapted to the game: they open the animation lab from the setup screen, where Enter ends the round. |
 
 The command language (`key`, `hold`, `release`, `click`, `move`, `shot`,
 `quit`) is documented at the top of `src/script.rs`. Frames count from 1;
@@ -110,6 +111,11 @@ arrive while a shot still flies (and is rightly ignored). For tours that
 depend on timing, put `{"recording_mode": "gameplay"}` in the data folder's
 `settings.json`; then every script frame is exactly two game steps. Flat
 shots bounce many times and can fly for several seconds.
+
+**Frame time.** Script mode does not wait between frames except for the
+display's vsync, so `(wall time of a long run − a short run) / extra frames`
+is the time per frame. With `vblank_mode=0` (Mesa) it measures the game
+itself rather than the monitor; see docs/VERIFICATION.md (M7).
 
 Check a saved video:
 
