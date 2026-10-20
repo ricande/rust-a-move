@@ -39,7 +39,7 @@ next to the code in `src/rustamove/`:
 | --- | --- |
 | `geometry` | Layouts for 6–18 columns and 75–100 % zoom fit the board; neighbours are reciprocal and touching; nearest-cell tie-breaks; runner corridors check staggered rows; nearest exit, left on a tie. |
 | `board` | Row-major storage, ids, revisions, no overwriting, ceiling anchoring, ceiling drop by one pitch, danger line. |
-| `round` | R01–R08/R11–R13, X01, X04, X06–X08: a boxed-in Angry still explodes; chains resolve before falls and score once; a blast through the anchors drops the rest; Angry is inert unless hit; the rules set the radius; blasts lock input until shown, with one blast sound and bounded accents; three match and two do not; groups across rows; unrelated triples stay; cut branches fall once for fall points; walls hold nothing; a clearing shot wins before the ceiling drops; every fifth shot drops the ceiling; the danger line and blocked shots lose; ammunition follows the board; one sound per kind; presses outside aiming are dropped; rounds are deterministic; random play always ends and the result is stable after the ending hold; level 1 can be won. |
+| `round` | R01–R13, X01, X04, X06–X08, E01–E12, E14: boxed-in runners stay (frantic next to an Angry); open ones struggle 90 ticks and leave for 10 points without counting as a shot; panic leaves at once; a closed route restarts on the other side; a shot beats a leaving runner and none leaves in flight; routes opened by a shot wait for aiming; runners leave one at a time and fallen ones do not escape; runners match and get blasted; panic is not remembered; the last escape wins; runner levels start blocked; a boxed-in Angry still explodes; chains resolve before falls and score once; a blast through the anchors drops the rest; Angry is inert unless hit; the rules set the radius; blasts lock input until shown, with one blast sound and bounded accents; three match and two do not; groups across rows; unrelated triples stay; cut branches fall once for fall points; walls hold nothing; a clearing shot wins before the ceiling drops; every fifth shot drops the ceiling; the danger line and blocked shots lose; ammunition follows the board; one sound per kind; presses outside aiming are dropped; rounds are deterministic; random play always ends and the result is stable after the ending hold; level 1 can be won. |
 | `blast` | Areas count graph steps through empty cells and never wrap; radius 1, 2 and 3; chains in waves on the snapshot; overlapping and cyclic blasts take each creature and each Angry once; a checkerboard chain climbs one column. |
 | `content` | Curated levels parse and fit at every zoom; bad files are rejected with a reason; width, support and danger are checked; generated boards are valid, connected, reproducible and grow with the level. |
 | `persistence` | Options round-trip; broken, out-of-range and newer files give defaults and a warning and are never rewritten by reading. |
@@ -84,6 +84,7 @@ cargo run --release
 
 | Script | What it does |
 | --- | --- |
+| `scripts/runner_tour.txt` | Plays levels 1–6 in a row with pictures every 6 frames in levels 5–6: a runner escaping once a match frees it, and a panicking runner next to an Angry that bolts the moment a match opens its way. Run it in Prioritize gameplay. |
 | `scripts/blast_tour.txt` | Plays levels 1–4 in a row: matches, the first Angry blast (level 3) and a three-wave chain (level 4) with pictures every two frames around the blasts, then saves the level-4 video. Run it in Prioritize gameplay. |
 | `scripts/play_tour.txt` | A real game: wins level 1 and saves the video, loses level 1 at the danger line and saves that video, Retry (same board), pause and abort. Its angles come from `cargo test tour_angles -- --ignored --nocapture`. Run it in Prioritize gameplay (below). |
 | `scripts/range_tour.txt` | Shooting range: mouse aim left/right, a shot in flight and landed, a bank shot on the curtain board, keyboard aim, the pocket board, 18 columns, zoom 75 %, pause, results and Save video. Add `RUST_A_MOVE_DEV=1` to see the path overlay in the screenshots. |
@@ -94,6 +95,13 @@ The command language (`key`, `hold`, `release`, `click`, `move`, `shot`,
 `quit`) is documented at the top of `src/script.rs`. Frames count from 1;
 two simulation steps run per frame. Board changes in the range are only
 accepted while aiming, so give a shot time to land before switching boards.
+
+Runners move while the player aims, so a tour's waiting times change the
+game. `cargo test tour_angles -- --ignored --nocapture` plays every level
+with exactly the tick schedule of `runner_tour.txt` (91 ticks before the
+first shot, then 2 × (wait + 22) ticks between shots, with the tour's
+`wait(angle)`) and prints the angles the tour uses; keep both in step when
+changing either.
 
 In the default recording mode (Prioritize recording) the game waits for
 the video encoder, so a script can run ahead of the game and a click can

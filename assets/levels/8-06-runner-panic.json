@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "id": "runner-panic",
+  "columns": 8,
+  "seed": 707,
+  "rows": [
+    ["round", "round", "block", "block", "runner:hex", "triangle", "triangle", null],
+    ["round", "block", "diamond", "angry", null, null, null],
+    [null, "block", "diamond", null, null, null, null, null]
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "id": "runner-intro",
+  "columns": 8,
+  "seed": 606,
+  "rows": [
+    ["round", "round", "block", "block", "runner:oval", "hex", "hex", "hex"],
+    ["round", "block", "diamond", "diamond", null, "hex", null],
+    [null, null, "diamond", null, null, null, null, null]
+  ]
+}

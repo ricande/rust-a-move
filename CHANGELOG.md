@@ -65,6 +65,14 @@ All notable changes to Rust a move are documented here.
   a few Angry in generated levels from level 3, and a Reduced flashes
   option on the setup screen. `scripts/blast_tour.txt`.
 
+- **Runners (M5):** runners struggle towards a straight open path to the
+  side for 0.75 s and dash off the board (10 points); next to an Angry
+  they bolt at once. They only move while the player aims, one at a time,
+  never through anything, and a shot always comes first. What they held
+  falls. Escape sound, two new levels (runner intro, runner panic), runners
+  in generated levels from level 5. `scripts/runner_tour.txt` and a
+  tick-exact tour simulation.
+
 ### Removed
 
 - The template's example game and its assets (`paw.png`, `chime.wav`).

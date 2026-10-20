@@ -1,0 +1,338 @@
+# Plays levels 1-6 of Rust a move in a row at 8 columns (M5): matches,
+# blasts, the first runner (level 5: it escapes once a match opens its
+# way) and a panicking runner next to an Angry (level 6), with pictures
+# every 6 frames in levels 5-6, then saves the level-6 video.
+# Runners move while the player aims, so the timing matters: the angles
+# come from `cargo test tour_angles -- --ignored --nocapture`, which plays
+# with exactly this script's tick schedule. Use Prioritize gameplay
+# ({"recording_mode": "gameplay"} in the data folder's settings.json).
+# Run with temp folders (see docs/DEVELOPMENT.md):
+#   RUST_A_MOVE_SCRIPT=scripts/runner_tour.txt RUST_A_MOVE_SHOTS=/tmp/ram/shots \
+#   RUST_A_MOVE_DATA_DIR=/tmp/ram/data RUST_A_MOVE_VIDEO_DIR=/tmp/ram/videos cargo run --release
+
+5     click 270 526   # Play
+15    shot L1-00-setup
+16    key space       # Play level 1
+40    shot L1-01-start
+41    move 332.3735 556.5557
+61    shot L1-s1-aim
+62    click 332.3735 556.5557
+170   shot L1-s1-after
+171   move 192.3543 560.2223
+191   shot L1-s2-aim
+192   click 192.3543 560.2223
+301   shot L1-s2-after
+302   move 301.3585 551.6434
+322   shot L1-s3-aim
+323   click 301.3585 551.6434
+430   shot L1-s3-after
+431   move 197.4234 558.9113
+451   shot L1-s4-aim
+452   click 197.4234 558.9113
+560   shot L1-s4-after
+561   move 207.6265 556.5557
+581   shot L1-s5-aim
+582   click 207.6265 556.5557
+690   shot L1-s5-after
+691   move 298.7537 551.3811
+711   shot L1-s6-aim
+712   click 298.7537 551.3811
+819   shot L1-s6-after
+969   shot L1-results
+970   click 270 726   # Next round
+980   shot L2-00-setup
+981   key space       # Play level 2
+1005  shot L2-01-start
+1006  move 215.3293 555.0235
+1026  shot L2-s1-aim
+1027  click 215.3293 555.0235
+1135  shot L2-s1-after
+1136  move 324.6707 555.0235
+1156  shot L2-s2-aim
+1157  click 324.6707 555.0235
+1265  shot L2-s2-after
+1266  move 417.7271 588.8933
+1286  shot L2-s3-aim
+1287  click 417.7271 588.8933
+1401  shot L2-s3-after
+1402  move 426.7496 594.2080
+1422  shot L2-s4-aim
+1423  click 426.7496 594.2080
+1538  shot L2-s4-after
+1539  move 192.3543 560.2223
+1559  shot L2-s5-aim
+1560  click 192.3543 560.2223
+1669  shot L2-s5-after
+1819  shot L2-results
+1820  click 270 726   # Next round
+1830  shot L3-00-setup
+1831  key space       # Play level 3
+1855  shot L3-01-start
+1856  move 243.8533 551.1416
+1876  shot L3-s1-aim
+1877  click 243.8533 551.1416
+1984  shot L3-s1-after
+1985  move 167.3940 568.0922
+2005  shot L3-s2-aim
+2006  click 167.3940 568.0922
+2116  shot L3-s2-after
+2117  move 301.3585 551.6434
+2137  shot L3-s3-aim
+2138  click 301.3585 551.6434
+2245  shot L3-s3-after
+2246  move 301.3585 551.6434
+2266  shot L3-s4-aim
+2267  click 301.3585 551.6434
+2374  shot L3-s4-after
+2375  move 296.1467 551.1416
+2395  shot L3-s5-aim
+2396  click 296.1467 551.1416
+2503  shot L3-s5-after
+2653  shot L3-results
+2654  click 270 726   # Next round
+2664  shot L4-00-setup
+2665  key space       # Play level 4
+2689  shot L4-01-start
+2690  move 285.7008 550.4111
+2710  shot L4-s1-aim
+2711  click 285.7008 550.4111
+2818  shot L4-s1-after
+2819  move 167.3940 568.0922
+2839  shot L4-s2-aim
+2840  click 167.3940 568.0922
+2950  shot L4-s2-after
+2951  move 322.0945 554.5577
+2971  shot L4-s3-aim
+2972  click 322.0945 554.5577
+3080  shot L4-s3-after
+3081  move 283.0858 550.2855
+3101  shot L4-s4-aim
+3102  click 283.0858 550.2855
+3209  shot L4-s4-after
+3359  shot L4-results
+3360  click 270 726   # Next round
+3370  shot L5-00-setup
+3371  key space       # Play level 5
+3395  shot L5-01-start
+3396  move 225.6572 553.2952
+3416  shot L5-s1-aim
+3417  click 225.6572 553.2952
+3423  shot L5-s1-t006
+3429  shot L5-s1-t012
+3435  shot L5-s1-t018
+3441  shot L5-s1-t024
+3447  shot L5-s1-t030
+3453  shot L5-s1-t036
+3459  shot L5-s1-t042
+3465  shot L5-s1-t048
+3471  shot L5-s1-t054
+3477  shot L5-s1-t060
+3483  shot L5-s1-t066
+3489  shot L5-s1-t072
+3495  shot L5-s1-t078
+3501  shot L5-s1-t084
+3507  shot L5-s1-t090
+3513  shot L5-s1-t096
+3519  shot L5-s1-t102
+3525  shot L5-s1-after
+3526  move 210.1896 556.0226
+3546  shot L5-s2-aim
+3547  click 210.1896 556.0226
+3553  shot L5-s2-t006
+3559  shot L5-s2-t012
+3565  shot L5-s2-t018
+3571  shot L5-s2-t024
+3577  shot L5-s2-t030
+3583  shot L5-s2-t036
+3589  shot L5-s2-t042
+3595  shot L5-s2-t048
+3601  shot L5-s2-t054
+3607  shot L5-s2-t060
+3613  shot L5-s2-t066
+3619  shot L5-s2-t072
+3625  shot L5-s2-t078
+3631  shot L5-s2-t084
+3637  shot L5-s2-t090
+3643  shot L5-s2-t096
+3649  shot L5-s2-t102
+3655  shot L5-s2-after
+3656  move 217.9055 554.5577
+3676  shot L5-s3-aim
+3677  click 217.9055 554.5577
+3683  shot L5-s3-t006
+3689  shot L5-s3-t012
+3695  shot L5-s3-t018
+3701  shot L5-s3-t024
+3707  shot L5-s3-t030
+3713  shot L5-s3-t036
+3719  shot L5-s3-t042
+3725  shot L5-s3-t048
+3731  shot L5-s3-t054
+3737  shot L5-s3-t060
+3743  shot L5-s3-t066
+3749  shot L5-s3-t072
+3755  shot L5-s3-t078
+3761  shot L5-s3-t084
+3767  shot L5-s3-t090
+3773  shot L5-s3-t096
+3779  shot L5-s3-t102
+3785  shot L5-s3-after
+3786  move 322.0945 554.5577
+3806  shot L5-s4-aim
+3807  click 322.0945 554.5577
+3813  shot L5-s4-t006
+3819  shot L5-s4-t012
+3825  shot L5-s4-t018
+3831  shot L5-s4-t024
+3837  shot L5-s4-t030
+3843  shot L5-s4-t036
+3849  shot L5-s4-t042
+3855  shot L5-s4-t048
+3861  shot L5-s4-t054
+3867  shot L5-s4-t060
+3873  shot L5-s4-t066
+3879  shot L5-s4-t072
+3885  shot L5-s4-t078
+3891  shot L5-s4-t084
+3897  shot L5-s4-t090
+3903  shot L5-s4-t096
+3909  shot L5-s4-t102
+3915  shot L5-s4-after
+4065  shot L5-results
+4066  click 270 726   # Next round
+4076  shot L6-00-setup
+4077  key space       # Play level 6
+4101  shot L6-01-start
+4102  move 225.6572 553.2952
+4122  shot L6-s1-aim
+4123  click 225.6572 553.2952
+4129  shot L6-s1-t006
+4135  shot L6-s1-t012
+4141  shot L6-s1-t018
+4147  shot L6-s1-t024
+4153  shot L6-s1-t030
+4159  shot L6-s1-t036
+4165  shot L6-s1-t042
+4171  shot L6-s1-t048
+4177  shot L6-s1-t054
+4183  shot L6-s1-t060
+4189  shot L6-s1-t066
+4195  shot L6-s1-t072
+4201  shot L6-s1-t078
+4207  shot L6-s1-t084
+4213  shot L6-s1-t090
+4219  shot L6-s1-t096
+4225  shot L6-s1-t102
+4231  shot L6-s1-after
+4232  move 199.9664 558.2890
+4252  shot L6-s2-aim
+4253  click 199.9664 558.2890
+4259  shot L6-s2-t006
+4265  shot L6-s2-t012
+4271  shot L6-s2-t018
+4277  shot L6-s2-t024
+4283  shot L6-s2-t030
+4289  shot L6-s2-t036
+4295  shot L6-s2-t042
+4301  shot L6-s2-t048
+4307  shot L6-s2-t054
+4313  shot L6-s2-t060
+4319  shot L6-s2-t066
+4325  shot L6-s2-t072
+4331  shot L6-s2-t078
+4337  shot L6-s2-t084
+4343  shot L6-s2-t090
+4349  shot L6-s2-t096
+4355  shot L6-s2-t102
+4361  shot L6-s2-after
+4362  move 145.5920 577.0116
+4382  shot L6-s3-aim
+4383  click 145.5920 577.0116
+4389  shot L6-s3-t006
+4395  shot L6-s3-t012
+4401  shot L6-s3-t018
+4407  shot L6-s3-t024
+4413  shot L6-s3-t030
+4419  shot L6-s3-t036
+4425  shot L6-s3-t042
+4431  shot L6-s3-t048
+4437  shot L6-s3-t054
+4443  shot L6-s3-t060
+4449  shot L6-s3-t066
+4455  shot L6-s3-t072
+4461  shot L6-s3-t078
+4467  shot L6-s3-t084
+4473  shot L6-s3-t090
+4479  shot L6-s3-t096
+4485  shot L6-s3-t102
+4491  shot L6-s3-t108
+4495  shot L6-s3-after
+4496  move 192.3543 560.2223
+4516  shot L6-s4-aim
+4517  click 192.3543 560.2223
+4523  shot L6-s4-t006
+4529  shot L6-s4-t012
+4535  shot L6-s4-t018
+4541  shot L6-s4-t024
+4547  shot L6-s4-t030
+4553  shot L6-s4-t036
+4559  shot L6-s4-t042
+4565  shot L6-s4-t048
+4571  shot L6-s4-t054
+4577  shot L6-s4-t060
+4583  shot L6-s4-t066
+4589  shot L6-s4-t072
+4595  shot L6-s4-t078
+4601  shot L6-s4-t084
+4607  shot L6-s4-t090
+4613  shot L6-s4-t096
+4619  shot L6-s4-t102
+4625  shot L6-s4-t108
+4626  shot L6-s4-after
+4627  move 167.3940 568.0922
+4647  shot L6-s5-aim
+4648  click 167.3940 568.0922
+4654  shot L6-s5-t006
+4660  shot L6-s5-t012
+4666  shot L6-s5-t018
+4672  shot L6-s5-t024
+4678  shot L6-s5-t030
+4684  shot L6-s5-t036
+4690  shot L6-s5-t042
+4696  shot L6-s5-t048
+4702  shot L6-s5-t054
+4708  shot L6-s5-t060
+4714  shot L6-s5-t066
+4720  shot L6-s5-t072
+4726  shot L6-s5-t078
+4732  shot L6-s5-t084
+4738  shot L6-s5-t090
+4744  shot L6-s5-t096
+4750  shot L6-s5-t102
+4756  shot L6-s5-t108
+4758  shot L6-s5-after
+4759  move 309.1579 552.5665
+4779  shot L6-s6-aim
+4780  click 309.1579 552.5665
+4786  shot L6-s6-t006
+4792  shot L6-s6-t012
+4798  shot L6-s6-t018
+4804  shot L6-s6-t024
+4810  shot L6-s6-t030
+4816  shot L6-s6-t036
+4822  shot L6-s6-t042
+4828  shot L6-s6-t048
+4834  shot L6-s6-t054
+4840  shot L6-s6-t060
+4846  shot L6-s6-t066
+4852  shot L6-s6-t072
+4858  shot L6-s6-t078
+4864  shot L6-s6-t084
+4870  shot L6-s6-t090
+4876  shot L6-s6-t096
+4882  shot L6-s6-t102
+4887  shot L6-s6-after
+5037  shot L6-results
+5038  click 152 586   # Save the level-6 video
+5158  shot L6-saved
+5159  quit

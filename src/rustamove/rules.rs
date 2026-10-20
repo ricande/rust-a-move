@@ -34,6 +34,16 @@ pub struct Rules {
     pub blast_present_ticks: u64,
     /// At most this many extra sound accents for later waves of a chain.
     pub blast_accents: u32,
+    /// A runner leaves on open aiming tick number max(1, this): 90 is
+    /// 0.75 s, so it is still there on tick 89 and gone on tick 90.
+    pub runner_struggle_ticks: u32,
+    /// The same next to an Angry: 0 means no extra delay, it leaves on its
+    /// first open tick.
+    pub panic_struggle_ticks: u32,
+    /// A runner's dash off the board; input stays locked meanwhile.
+    pub escape_present_ticks: u64,
+    /// Points for a runner that gets away.
+    pub escape_score: u64,
 }
 
 impl Default for Rules {
@@ -53,6 +63,10 @@ impl Default for Rules {
             blast_wave_ticks: 12,
             blast_present_ticks: 42,
             blast_accents: 3,
+            runner_struggle_ticks: 90,
+            panic_struggle_ticks: 0,
+            escape_present_ticks: 30,
+            escape_score: 10,
         }
     }
 }

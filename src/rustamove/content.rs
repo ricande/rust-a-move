@@ -25,6 +25,13 @@ const ANGRY_FROM_LEVEL: u32 = 3;
 /// … each cell with this chance, in percent.
 const ANGRY_PERCENT: u32 = 4;
 
+/// Generated levels contain runners from this level on …
+const RUNNER_FROM_LEVEL: u32 = 5;
+/// … each ordinary cell with this chance, in percent, …
+const RUNNER_PERCENT: u32 = 6;
+/// … at most this share of the cells, in percent (at least one).
+const RUNNER_CAP_PERCENT: u32 = 8;
+
 /// Curated levels by (columns, file). Level n uses the n-th entry of its
 /// width.
 const CURATED: &[(u16, &str)] = &[
@@ -41,7 +48,15 @@ const CURATED: &[(u16, &str)] = &[
         8,
         include_str!("../../assets/levels/8-04-chain-reaction.json"),
     ),
-    (8, include_str!("../../assets/levels/8-05-full-house.json")),
+    (
+        8,
+        include_str!("../../assets/levels/8-05-runner-intro.json"),
+    ),
+    (
+        8,
+        include_str!("../../assets/levels/8-06-runner-panic.json"),
+    ),
+    (8, include_str!("../../assets/levels/8-07-full-house.json")),
 ];
 
 #[derive(Deserialize)]
@@ -230,8 +245,8 @@ pub fn curated(columns: u16, number: u32) -> Option<Level> {
 }
 
 /// A connected board for `number` on `layout`, deterministic from `seed`.
-/// Higher levels get more rows and families, and from level 3 a few Angry
-/// creatures.
+/// Higher levels get more rows and families, from level 3 a few Angry
+/// creatures and from level 5 a few runners.
 pub fn generate(layout: Layout, number: u32, seed: u64) -> Board {
     let mut rng = Rng::new(seed);
     let families = (3 + (number as usize).saturating_sub(1) / 2).min(FAMILIES.len());
@@ -246,6 +261,8 @@ pub fn generate(layout: Layout, number: u32, seed: u64) -> Board {
     let cells: u32 = (0..rows).map(|r| layout.row_len(r) as u32).sum();
     let angry_cap = (cells * 5 / 100).max(1);
     let mut angry = 0;
+    let runner_cap = (cells * RUNNER_CAP_PERCENT / 100).max(1);
+    let mut runners = 0;
     for row in 0..rows {
         let mut line = Vec::new();
         for col in 0..layout.row_len(row) {
@@ -275,7 +292,11 @@ pub fn generate(layout: Layout, number: u32, seed: u64) -> Board {
                 continue;
             }
             line.push(Some(f));
-            b.place(Cell::new(row, col), Kind::Ordinary(FAMILIES[f]), false);
+            let runner = number >= RUNNER_FROM_LEVEL
+                && runners < runner_cap
+                && rng.below(100) < RUNNER_PERCENT;
+            runners += runner as u32;
+            b.place(Cell::new(row, col), Kind::Ordinary(FAMILIES[f]), runner);
         }
         grid.push(line);
     }
@@ -346,8 +367,8 @@ mod tests {
             }
             n += 1;
         }
-        assert!(n >= 5);
-        assert!(curated(8, 1).is_some() && curated(8, 6).is_none() && curated(6, 1).is_none());
+        assert!(n >= 7);
+        assert!(curated(8, 1).is_some() && curated(8, 8).is_none() && curated(6, 1).is_none());
         // The progression: Angry first appears in level 3, a chain in 4.
         let angry = |n: u32| {
             curated(8, n)
@@ -358,6 +379,12 @@ mod tests {
                 .count()
         };
         assert_eq!((angry(1), angry(2), angry(3), angry(4)), (0, 0, 1, 3));
+        // Runners first appear in level 5, next to an Angry in 6.
+        let runners = |n: u32| curated(8, n).unwrap().cells.iter().filter(|c| c.2).count();
+        assert_eq!(
+            (runners(4), runners(5), runners(6), runners(7)),
+            (0, 1, 1, 1)
+        );
         assert!(curated(8, 0).is_none());
     }
 
@@ -453,12 +480,16 @@ mod tests {
                     assert!(a.count() > columns as usize, "{columns} {number}");
                     assert_eq!(a.anchored().len(), a.count(), "connected");
                     assert!(!a.reaches_danger());
-                    assert!(a.occupied().all(|(_, c)| !c.runner), "no runners before M5");
+                    let runners = a.occupied().filter(|(_, c)| c.runner).count();
                     if source == Source::Generated {
                         let angry = a.occupied().filter(|(_, c)| c.kind == Kind::Angry).count();
                         if number < ANGRY_FROM_LEVEL {
                             assert_eq!(angry, 0);
                         }
+                        if number < RUNNER_FROM_LEVEL {
+                            assert_eq!(runners, 0);
+                        }
+                        assert!(runners * 100 <= a.count() * RUNNER_CAP_PERCENT as usize + 100);
                         assert!(
                             angry * 100 <= a.count() * 8 + 100,
                             "Angry stays rare: {angry} of {}",

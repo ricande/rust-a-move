@@ -65,6 +65,8 @@ pub struct Resolution {
     pub blasted: Vec<Cell>,
     /// Number of blast waves (0 without a blast).
     pub blast_waves: u32,
+    /// A runner that left, and which way.
+    pub escaped: Option<(Cell, i8)>,
     /// Removed because nothing held them any more.
     pub fallen: Vec<Cell>,
     /// Every removed creature with where it was, for presentation.
@@ -97,6 +99,10 @@ pub enum Cause {
         source: bool,
     },
     Fell,
+    /// A runner that got away sideways.
+    Escaped {
+        dir: i8,
+    },
 }
 
 /// A creature leaving the board, shown for a while. Cosmetic only.
@@ -122,6 +128,8 @@ enum Act {
         burst_at: u64,
         source: bool,
     },
+    /// Squash, then a dash out of the side.
+    Escape { at: u64, dir: f32 },
 }
 
 impl Actor {
@@ -131,6 +139,7 @@ impl Actor {
             Act::Pop { at } => at + rules.pop_present_ticks + 36,
             Act::Fall { at, .. } => at + rules.fall_max_ticks,
             Act::Blast { burst_at, .. } => burst_at + rules.blast_present_ticks,
+            Act::Escape { at, .. } => at + rules.escape_present_ticks + 30,
         }
     }
 }
@@ -144,6 +153,7 @@ pub struct Stats {
     pub ceiling_drops: u32,
     pub blasted: u32,
     pub longest_chain: u32,
+    pub escaped: u32,
 }
 
 #[derive(Clone)]
@@ -290,8 +300,13 @@ impl Round {
         }
         match self.phase {
             Phase::Aiming => {
+                // An explicit shot comes first (rule P09); only otherwise do
+                // runners struggle and maybe leave.
                 if intent.fire {
                     self.fire();
+                } else if let Some((cell, dir)) = self.step_runners() {
+                    let res = self.escape(cell, dir);
+                    self.present(&res);
                 } else {
                     self.refresh_plan();
                 }
@@ -447,6 +462,13 @@ impl Round {
         // Next ammunition, replacing families that are gone.
         self.loaded = self.next;
         self.next = self.draw_family();
+        self.fix_ammo();
+        res
+    }
+
+    /// Replaces loaded and next ammunition whose family has left the board
+    /// (rule R13), deterministically.
+    fn fix_ammo(&mut self) {
         let present = self.present_families();
         if !present.is_empty() {
             if !present.contains(&self.loaded) {
@@ -456,6 +478,90 @@ impl Round {
                 self.next = self.draw_family();
             }
         }
+    }
+
+    /// One aiming tick for the runners (rules R09–R10): each runner, in id
+    /// order, keeps its route while it stays open, otherwise takes the open
+    /// side nearer its exit (left on a tie) and starts over; with no route
+    /// it stops. Returns the first runner ready to leave: after its full
+    /// struggle, or at once next to an Angry. At most one leaves per tick.
+    fn step_runners(&mut self) -> Option<(Cell, i8)> {
+        let l = self.board.layout;
+        let occupied: Vec<Cell> = self.board.occupied().map(|(c, _)| c).collect();
+        let mut runners: Vec<(CreatureId, Cell)> = self
+            .board
+            .occupied()
+            .filter(|(_, c)| c.runner)
+            .map(|(cell, c)| (c.id, cell))
+            .collect();
+        runners.sort();
+        let mut ready = None;
+        for (_, cell) in runners {
+            let held = self.board.get(cell).and_then(|c| c.struggle);
+            let dir = match held {
+                Some(s) if l.route_clear(cell, s.dir, &occupied) => Some(s.dir),
+                _ => l.chosen_exit(cell, &occupied),
+            };
+            let panic = self.angry_next_to(cell);
+            let rules = self.rules;
+            let Some(c) = self.board.get_mut(cell) else {
+                continue;
+            };
+            c.struggle = dir.map(|d| {
+                let ticks = match held {
+                    Some(s) if s.dir == d => s.ticks + 1,
+                    _ => 1,
+                };
+                super::board::Struggle { dir: d, ticks }
+            });
+            if let Some(s) = c.struggle {
+                let limit = if panic {
+                    rules.panic_struggle_ticks
+                } else {
+                    rules.runner_struggle_ticks
+                };
+                if ready.is_none() && s.ticks >= limit.max(1) {
+                    ready = Some((cell, s.dir));
+                }
+            }
+        }
+        ready
+    }
+
+    fn angry_next_to(&self, cell: Cell) -> bool {
+        self.board
+            .layout
+            .neighbours(cell)
+            .into_iter()
+            .any(|n| self.board.get(n).is_some_and(|c| c.kind == Kind::Angry))
+    }
+
+    /// A runner leaves: it is gone at once (its dash is only shown), what
+    /// no longer hangs falls, and the board may be empty (rule R10). It is
+    /// not a shot: the ceiling counter does not move.
+    pub fn escape(&mut self, cell: Cell, dir: i8) -> Resolution {
+        let mut res = Resolution::default();
+        self.take(cell, Cause::Escaped { dir }, &mut res);
+        res.escaped = Some((cell, dir));
+        let anchored = self.board.anchored();
+        res.fallen = self
+            .board
+            .occupied()
+            .map(|(c, _)| c)
+            .filter(|c| !anchored.contains(c))
+            .collect();
+        for &c in &res.fallen.clone() {
+            self.take(c, Cause::Fell, &mut res);
+        }
+        res.points = self.rules.escape_score + res.fallen.len() as u64 * self.rules.fall_score;
+        self.score = self.score.saturating_add(res.points);
+        self.stats.escaped += 1;
+        self.stats.fallen += res.fallen.len() as u32;
+        self.stats.biggest_fall = self.stats.biggest_fall.max(res.fallen.len() as u32);
+        if self.board.count() == 0 {
+            res.end = Some(End::Won);
+        }
+        self.fix_ammo();
         res
     }
 
@@ -508,14 +614,18 @@ impl Round {
         let r = self.rules;
         let burst = |wave: u32| now + wave as u64 * r.blast_wave_ticks + r.blast_smile_ticks;
         // When the last visible removal has played, before falls start.
-        let removals_done = if res.blast_waves > 0 {
+        let removals_done = if res.escaped.is_some() {
+            now + r.escape_present_ticks
+        } else if res.blast_waves > 0 {
             burst(res.blast_waves - 1) + r.blast_present_ticks
         } else if !res.matched.is_empty() {
             now + r.pop_present_ticks
         } else {
             now
         };
-        let fall_at = if res.blast_waves > 0 {
+        let fall_at = if res.escaped.is_some() {
+            now + r.escape_present_ticks / 3
+        } else if res.blast_waves > 0 {
             burst(res.blast_waves - 1) + r.blast_present_ticks / 2
         } else if !res.matched.is_empty() {
             now + r.pop_present_ticks / 2
@@ -534,6 +644,10 @@ impl Round {
                     burst_at: burst(wave),
                     source,
                 },
+                Cause::Escaped { dir } => Act::Escape {
+                    at: now,
+                    dir: dir as f32,
+                },
             };
             self.actors.push(Actor {
                 kind: g.kind,
@@ -545,7 +659,9 @@ impl Round {
         }
         // One sound per kind: one blast plus a few accents for later waves,
         // one pop, one fall.
-        if res.blast_waves > 0 {
+        if res.escaped.is_some() {
+            self.sounds.push(sfx::ESCAPE);
+        } else if res.blast_waves > 0 {
             self.scheduled.push((burst(0), sfx::BLAST));
             for wave in 1..res.blast_waves.min(r.blast_accents + 1) {
                 self.scheduled.push((burst(wave), sfx::CHAIN));
@@ -572,8 +688,12 @@ impl Round {
                 self.finish(end, last);
             }
             None => {
-                // No aiming while a smile or blast is still showing.
+                // No aiming while a smile, blast or escape is still showing;
+                // after an escape also not while its cluster falls.
                 let mut until = removals_done.max(now + r.settle_ticks);
+                if res.escaped.is_some() && !res.fallen.is_empty() {
+                    until = until.max(fall_at + r.fall_max_ticks);
+                }
                 if res.ceiling_dropped {
                     until = until.max(now + r.ceiling_slide_ticks);
                 }
@@ -625,11 +745,7 @@ impl Round {
                     aimed: Some(c.id) == target,
                     angry_dir,
                     launcher_dir: vec2(to_launcher.x as f32, to_launcher.y as f32),
-                    runner: if c.runner {
-                        RunnerCue::Blocked
-                    } else {
-                        RunnerCue::None
-                    },
+                    runner: runner_cue(c, angry_dir.is_some()),
                 }
             })
             .collect()
@@ -817,6 +933,33 @@ impl Round {
                 };
                 render::draw_creature(v, pos, r, a.kind, a.runner, &pose, 1.0);
             }
+            Act::Escape { at, dir } => {
+                let s = secs(at).max(0.0);
+                // A squash, then a dash out of the side.
+                let squash = (s / 0.06).min(1.0);
+                let dash = (s - 0.06).max(0.0);
+                let pos = a.from + vec2(dir * 2600.0 * dash * dash, -6.0 * (1.0 - squash) * squash);
+                let mut pose = emotion::base_face(a.kind);
+                pose.scale = if s < 0.06 {
+                    vec2(1.0 - 0.2 * squash, 1.0 + 0.15 * squash)
+                } else {
+                    vec2(1.25, 0.85)
+                };
+                pose.angle = -dir * 0.25;
+                pose.pupil = vec2(dir, 0.0);
+                pose.mouth_curve = 0.45;
+                pose.mouth_open = 0.15;
+                pose.eye_open = 0.6;
+                if pos.x > -2.0 * r && pos.x < FIELD_W + 2.0 * r {
+                    render::draw_creature(v, pos, r, a.kind, true, &pose, 1.0);
+                    let trail = with_alpha(TEXT, 0.5);
+                    for k in [-0.4, 0.0, 0.4] {
+                        let y = pos.y + k * r;
+                        let x = pos.x - dir * 1.1 * r;
+                        v.line(vec2(x, y), vec2(x - dir * 0.9 * r, y), 2.0, trail);
+                    }
+                }
+            }
             Act::Blast {
                 smile_from,
                 burst_at,
@@ -905,6 +1048,22 @@ impl Round {
             let help = with_alpha(TEXT, 0.55);
             v.text_wrapped_centered(t!("round.help"), 922.0, 14.0, help);
         }
+    }
+}
+
+/// How a creature's runner state shows: pulling towards its route, frantic
+/// next to an Angry, or stuck.
+fn runner_cue(c: &super::board::Creature, angry_next: bool) -> RunnerCue {
+    if !c.runner {
+        return RunnerCue::None;
+    }
+    match (c.struggle, angry_next) {
+        (Some(s), true) => RunnerCue::Panic {
+            dir: Some(s.dir as f32),
+        },
+        (Some(s), false) => RunnerCue::Struggle { dir: s.dir as f32 },
+        (None, true) => RunnerCue::Panic { dir: None },
+        (None, false) => RunnerCue::Blocked,
     }
 }
 
@@ -1216,6 +1375,236 @@ mod tests {
         );
     }
 
+    /// A round with runners (`true`) and others on an 8-column board.
+    fn round_runners(cells: &[(u16, u16, Kind, bool)]) -> Round {
+        let mut b = Board::new(Layout::new(8, 1.0).unwrap());
+        for &(row, col, k, runner) in cells {
+            b.place(Cell::new(row, col), k, runner).unwrap();
+        }
+        Round::with_board(1, b, Rules::default(), 7, Source::Generated, false)
+    }
+
+    const RUN: Kind = Kind::Ordinary(Family::Oval);
+
+    /// Runs `n` aiming ticks without firing; returns the tick (1-based) on
+    /// which the runner in `cell` left, if it did.
+    fn tick_until_gone(r: &mut Round, cell: Cell, n: u32) -> Option<u32> {
+        for t in 1..=n {
+            r.update();
+            if r.board.get(cell).is_none_or(|c| !c.runner) {
+                return Some(t);
+            }
+        }
+        None
+    }
+
+    /// E01/E05: boxed in, with or without an Angry beside it: it stays,
+    /// frantic next to the Angry, and never passes through anything.
+    #[test]
+    fn a_boxed_in_runner_stays() {
+        let mut r = round_runners(&[(0, 2, H, false), (0, 3, RUN, true), (0, 4, H, false)]);
+        assert_eq!(tick_until_gone(&mut r, c(0, 3), 500), None);
+        assert_eq!(r.board.get(c(0, 3)).unwrap().struggle, None);
+        // A staggered neighbour below the left path blocks it as well.
+        let mut r = round_runners(&[
+            (1, 2, H, false),
+            (0, 2, H, false),
+            (0, 3, RUN, true),
+            (0, 4, H, false),
+            (1, 3, ANGRY, false),
+        ]);
+        assert_eq!(tick_until_gone(&mut r, c(0, 3), 500), None);
+        let cue = runner_cue(r.board.get(c(0, 3)).unwrap(), true);
+        assert_eq!(cue, RunnerCue::Panic { dir: None });
+    }
+
+    /// E02/E03: it struggles towards the open side for 90 aiming ticks
+    /// (still there on tick 89) and leaves on tick 90, for 10 points; not
+    /// a shot.
+    #[test]
+    fn an_open_runner_struggles_then_leaves() {
+        // Left open (the right is blocked by the anchor at column 7).
+        let mut r = round_runners(&[(0, 3, RUN, true), (0, 7, H, false)]);
+        assert_eq!(tick_until_gone(&mut r, c(0, 3), 89), None);
+        assert_eq!(r.board.get(c(0, 3)).unwrap().struggle.unwrap().dir, -1);
+        assert_eq!(tick_until_gone(&mut r, c(0, 3), 1), Some(1), "tick 90");
+        assert_eq!(r.score, 10);
+        assert_eq!((r.shots, r.since_drop), (0, 0), "not a shot");
+        assert_eq!(r.stats.escaped, 1);
+        // Only the right open: it goes right.
+        let mut r = round_runners(&[(0, 0, H, false), (0, 3, RUN, true)]);
+        tick_until_gone(&mut r, c(0, 3), 1);
+        assert_eq!(r.board.get(c(0, 3)).unwrap().struggle.unwrap().dir, 1);
+    }
+
+    /// E04: next to an Angry it leaves on its first open tick.
+    #[test]
+    fn a_runner_next_to_angry_leaves_at_once() {
+        let mut r = round_runners(&[(0, 3, RUN, true), (1, 3, ANGRY, false), (0, 4, H, false)]);
+        assert_eq!(tick_until_gone(&mut r, c(0, 3), 5), Some(1));
+    }
+
+    /// E06/E14: a closed route resets the struggle and the other side is
+    /// taken; the last creature escaping wins, after its dash and the hold.
+    #[test]
+    fn a_closed_route_restarts_and_the_last_escape_wins() {
+        let mut r = round_runners(&[(0, 3, RUN, true)]);
+        assert_eq!(tick_until_gone(&mut r, c(0, 3), 50), None);
+        assert_eq!(
+            r.board.get(c(0, 3)).unwrap().struggle.unwrap(),
+            super::super::board::Struggle { dir: -1, ticks: 50 }
+        );
+        // Something now blocks the left (as a fall or attachment could).
+        r.board.place(c(0, 0), H, false);
+        assert_eq!(tick_until_gone(&mut r, c(0, 3), 89), None);
+        assert_eq!(r.board.get(c(0, 3)).unwrap().struggle.unwrap().dir, 1);
+        // Remove the blocker again so that leaving empties the board.
+        r.board.remove(c(0, 0));
+        assert_eq!(
+            tick_until_gone(&mut r, c(0, 3), 1),
+            Some(1),
+            "the right route was kept"
+        );
+        assert_eq!(r.end, Some(End::Won));
+        assert_eq!(r.finished(), None, "the dash and the hold come first");
+        for _ in 0..(r.rules.escape_present_ticks + r.rules.ending_hold_ticks + 2) {
+            r.update();
+        }
+        assert_eq!(r.finished().map(|f| f.1), Some(Outcome::Won));
+    }
+
+    /// E07: firing on the tick the runner would leave: the shot wins and
+    /// the runner stays put through the whole flight.
+    #[test]
+    fn a_shot_beats_a_leaving_runner() {
+        // Aim straight at the runner; 89 open ticks pass while aiming.
+        let mut r = round_runners(&[(0, 3, RUN, true), (0, 7, H, false)]);
+        let d = r.board.layout.centre(c(0, 3)) - LAUNCHER;
+        r.aim.set((-d.y).atan2(d.x).to_degrees());
+        assert_eq!(tick_until_gone(&mut r, c(0, 3), 89), None);
+        // Tick 90 would let it go; a shot on that tick comes first.
+        fire(&mut r);
+        assert!(r.flight.is_some());
+        assert_eq!(
+            r.target(),
+            Some(r.board.get(c(0, 3)).unwrap().id),
+            "afraid and staying"
+        );
+        while r.flight.is_some() {
+            r.update();
+            assert!(
+                r.board.get(c(0, 3)).is_some_and(|c| c.runner),
+                "no escape in flight"
+            );
+        }
+    }
+
+    /// E08: a route opened by a shot is not used until the shot's effects
+    /// have played and aiming resumes; then the full struggle follows.
+    #[test]
+    fn a_route_opened_by_a_shot_waits_for_aiming() {
+        let mut r = round_runners(&[
+            (0, 1, H, false),
+            (0, 2, H, false),
+            (0, 3, RUN, true),
+            (0, 4, H, false),
+            (0, 7, H, false),
+        ]);
+        let res = land(&mut r, c(0, 0), HEX);
+        assert_eq!(res.matched.len(), 3, "the left blockers go");
+        r.present(&res);
+        let mut aiming_from = None;
+        let mut left_at = None;
+        for t in 1..400u32 {
+            r.update();
+            if aiming_from.is_none() && r.is_aiming() {
+                aiming_from = Some(t);
+            }
+            if left_at.is_none() && r.board.get(c(0, 3)).is_none() {
+                left_at = Some(t);
+            }
+        }
+        let (a, l) = (aiming_from.unwrap(), left_at.unwrap());
+        assert!(
+            l >= a + r.rules.runner_struggle_ticks - 1,
+            "aiming from {a}, left at {l}"
+        );
+    }
+
+    /// E09/E10: of two ready runners the older leaves first; if that drops
+    /// the other, it falls (20 points), it does not escape.
+    #[test]
+    fn runners_leave_one_at_a_time_and_fallen_ones_do_not_escape() {
+        let mut r = round_runners(&[(0, 1, RUN, true), (0, 6, RUN, true)]);
+        assert_eq!(tick_until_gone(&mut r, c(0, 1), 90), Some(90));
+        assert!(r.board.get(c(0, 6)).is_some(), "the other waits its turn");
+        let more = tick_until_gone(&mut r, c(0, 6), 200).unwrap();
+        assert!(
+            more > r.rules.escape_present_ticks as u32 - 1,
+            "after the first dash: {more}"
+        );
+        assert_eq!(r.stats.escaped, 2);
+
+        let mut r = round_runners(&[(0, 3, RUN, true), (1, 3, RUN, true)]);
+        assert_eq!(tick_until_gone(&mut r, c(0, 3), 90), Some(90));
+        assert!(r.board.get(c(1, 3)).is_none(), "the lower runner fell");
+        assert_eq!(r.stats.escaped, 1);
+        assert_eq!(r.score, 10 + 20);
+        assert_eq!(r.end, Some(End::Won));
+    }
+
+    /// E11/X07: a runner is an ordinary family member: matched normally;
+    /// and a blast takes it like anything else.
+    #[test]
+    fn runners_match_and_blast_like_their_family() {
+        let mut r = round_runners(&[
+            (0, 1, Kind::Ordinary(HEX), true),
+            (0, 2, H, false),
+            (0, 7, H, false),
+        ]);
+        let res = land(&mut r, c(0, 3), HEX);
+        assert_eq!(res.matched, vec![c(0, 1), c(0, 2), c(0, 3)]);
+        assert_eq!(r.stats.escaped, 0);
+        let mut r = round_runners(&[(0, 3, RUN, true), (1, 3, ANGRY, false), (0, 7, H, false)]);
+        let res = hit_angry(&mut r, c(1, 3));
+        assert!(res.blasted.contains(&c(0, 3)));
+        r.present(&res);
+        for _ in 0..300 {
+            r.update();
+        }
+        assert!(r.board.get(c(0, 3)).is_none());
+        assert_eq!(r.stats.escaped, 0, "a blasted runner never escapes");
+    }
+
+    /// E12: no panic remembered: once the Angry is gone, the normal delay.
+    #[test]
+    fn panic_is_not_remembered() {
+        let mut r = round_runners(&[
+            (0, 2, H, false),
+            (0, 3, RUN, true),
+            (1, 3, ANGRY, false),
+            (0, 7, H, false),
+        ]);
+        assert_eq!(tick_until_gone(&mut r, c(0, 3), 20), None, "blocked");
+        r.board.remove(c(1, 3));
+        r.board.remove(c(0, 2));
+        assert_eq!(tick_until_gone(&mut r, c(0, 3), 89), None);
+        assert_eq!(tick_until_gone(&mut r, c(0, 3), 1), Some(1));
+    }
+
+    /// The first runner levels start with the runner boxed in: nothing
+    /// happens until the player opens a way.
+    #[test]
+    fn runner_levels_start_blocked() {
+        for level in [5, 6] {
+            let mut r = Round::new(level, Layout::new(8, 1.0).unwrap(), false);
+            let (cell, _) = r.board.occupied().find(|(_, c)| c.runner).unwrap();
+            assert_eq!(tick_until_gone(&mut r, cell, 600), None, "level {level}");
+            let angry = r.angry_next_to(cell);
+            assert_eq!(angry, level == 6, "level 6 puts it next to an Angry");
+        }
+    }
+
     /// R05/R06: touching a wall does not hold; separate anchored parts stay.
     #[test]
     fn walls_do_not_hold_and_separate_anchors_do() {
@@ -1490,14 +1879,26 @@ mod tests {
     }
 
     /// The angle with the most points for the loaded creature (ties: the
-    /// shorter flight), worked out with the real resolution on a copy.
-    fn best_angle(r: &Round) -> f64 {
+    /// shorter flight), worked out with the real resolution on a copy; with
+    /// `avoid_angry`, never a direct Angry hit.
+    fn best_angle_avoiding(r: &Round, avoid_angry: bool) -> f64 {
         let mut best: Option<(u64, f64, f64)> = None;
         for i in 0..=320 {
             let a = 10.0 + i as f64 * 0.5;
             let Ok(p) = shot::plan(&r.board, a) else {
                 continue;
             };
+            if avoid_angry
+                && matches!(
+                    p.hit,
+                    Hit::Creature {
+                        kind: Kind::Angry,
+                        ..
+                    }
+                )
+            {
+                continue;
+            }
             if p.attachment.is_none()
                 && p.first_hit().is_some()
                 && !matches!(
@@ -1525,64 +1926,49 @@ mod tests {
         best.map_or(90.0, |b| b.2)
     }
 
-    /// Prints greedy angle sequences that win levels 1–4 at 8 columns
-    /// (used by `scripts/play_tour.txt` and `scripts/blast_tour.txt`), and a
-    /// losing one for level 1:
+    /// Frames a scripted tour waits after a click at `angle` (see
+    /// `scripts/runner_tour.txt`): long enough for a flat shot's bounces.
+    fn tour_wait(angle: f64) -> u64 {
+        (60.0 * (760.0 / angle.to_radians().sin()) / 960.0) as u64 + 60
+    }
+
+    /// Plays `level` like the scripted tours do, tick for tick (91 ticks
+    /// before the first shot, then 2 × (wait + 22) ticks between shots),
+    /// choosing the best angle at each shot, so runners that leave while the
+    /// player aims are part of it. Returns the angles and the round.
+    fn scripted_play(level: u32) -> (Vec<f64>, Round) {
+        let mut r = Round::new(level, Layout::new(8, 1.0).unwrap(), false);
+        for _ in 0..91 {
+            r.update();
+        }
+        let mut angles = Vec::new();
+        for _ in 0..60 {
+            if r.end.is_some() {
+                break;
+            }
+            // Level 6 shows the runner's panic, so do not blow it up.
+            let a = best_angle_avoiding(&r, level == 6);
+            angles.push(a);
+            r.aim.set(a);
+            fire(&mut r);
+            for _ in 0..(2 * (tour_wait(a) + 22) - 1) {
+                r.update();
+            }
+        }
+        (angles, r)
+    }
+
+    /// Prints the angle sequences for the scripted tours:
     /// `cargo test tour_angles -- --ignored --nocapture`.
     #[test]
     #[ignore]
     fn tour_angles() {
-        for level in 1..=4 {
-            let mut r = Round::new(level, Layout::new(8, 1.0).unwrap(), false);
-            let mut angles = Vec::new();
-            for _ in 0..80 {
-                if r.end.is_some() {
-                    break;
-                }
-                let a = best_angle(&r);
-                angles.push(a);
-                r.aim.set(a);
-                r.update();
-                fire(&mut r);
-                settle(&mut r);
-            }
+        for level in 1..=7 {
+            let (angles, r) = scripted_play(level);
             println!(
-                "LEVEL {level} {:?} score {} chain {}: {:?}",
-                r.end, r.score, r.stats.longest_chain, angles
+                "LEVEL {level} {:?} score {} chain {} escaped {}: {:?}",
+                r.end, r.score, r.stats.longest_chain, r.stats.escaped, angles
             );
         }
-        // Losing level 1: never match, as deep as possible.
-        let mut r = Round::new(1, Layout::new(8, 1.0).unwrap(), false);
-        let mut angles = Vec::new();
-        for _ in 0..80 {
-            if r.end.is_some() {
-                break;
-            }
-            let mut best: Option<(i64, f64)> = None;
-            for i in 0..=320 {
-                let a = 10.0 + i as f64 * 0.5;
-                let Ok(p) = shot::plan(&r.board, a) else {
-                    continue;
-                };
-                let Some(cell) = p.attachment else { continue };
-                let mut probe = r.clone();
-                let res = probe.resolve(&p);
-                let value = if res.matched.is_empty() {
-                    cell.row as i64
-                } else {
-                    -1
-                };
-                if best.is_none_or(|(v, _)| value > v) {
-                    best = Some((value, a));
-                }
-            }
-            let a = best.unwrap().1;
-            angles.push(a);
-            r.aim.set(a);
-            r.update();
-            fire(&mut r);
-            settle(&mut r);
-        }
-        println!("LOSE {:?}: {:?}", r.end, angles);
     }
 }

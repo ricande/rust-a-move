@@ -17,8 +17,19 @@ pub struct Creature {
     pub kind: Kind,
     /// Runner trait; only on ordinary creatures.
     pub runner: bool,
+    /// A runner's current route and how long it has struggled on it.
+    pub struggle: Option<Struggle>,
     /// Presentation only: never read by the rules.
     pub mood: Mood,
+}
+
+/// A runner pulling towards an open exit (rule R09).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Struggle {
+    /// −1 left, +1 right.
+    pub dir: i8,
+    /// Aiming ticks spent on this route, this one included.
+    pub ticks: u32,
 }
 
 impl Creature {
@@ -64,6 +75,10 @@ impl Board {
         self.index(cell).and_then(|i| self.cells[i].as_ref())
     }
 
+    pub fn get_mut(&mut self, cell: Cell) -> Option<&mut Creature> {
+        self.index(cell).and_then(|i| self.cells[i].as_mut())
+    }
+
     pub fn is_empty(&self, cell: Cell) -> bool {
         self.layout.contains(cell) && self.get(cell).is_none()
     }
@@ -80,6 +95,7 @@ impl Board {
             id,
             kind,
             runner: runner && kind != Kind::Angry,
+            struggle: None,
             mood: Mood::default(),
         });
         self.revision += 1;

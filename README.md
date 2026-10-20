@@ -40,15 +40,14 @@ Work in progress, built milestone by milestone
 | M2 | Board, shared shot prediction, fear aiming, shooting range | done |
 | M3 | Matching, falls, score, ceiling pressure, win/lose and retry | done |
 | M4 | Angry blasts and chain reactions | done |
-| M5 | Runners | next |
-| M6 | Levels, saved options, tutorial | planned |
+| M5 | Runners | done |
+| M6 | Levels, saved options, tutorial | next |
 | M7 | Recording and platform review, release candidate | planned |
 
 Today the game is playable: match three or more, drop hanging clusters,
-blow up Angry creatures and set off chain reactions, beat the descending
-ceiling, win by clearing the board or lose at the danger line – then Retry
-or go on to the next level. Runners are visible in the animation lab and
-arrive in levels with M5. The setup screen also opens the **shooting range** (a test
+blow up Angry creatures and set off chain reactions, watch runners escape,
+beat the descending ceiling, win by clearing the board or lose at the
+danger line – then Retry or go on to the next level. The setup screen also opens the **shooting range** (a test
 bench for aiming) and the **animation lab** (every expression and effect).
 
 ### How to play
@@ -63,6 +62,11 @@ bench for aiming) and the **animation lab** (every expression and effect).
   look nervous. Hit it directly and it explodes, taking every creature next
   to it (10 points each); other Angry ones in the blast explode too, in a
   chain. Angry never matches, and if it falls it does not explode.
+- **Runners** wear a sweatband and little feet. When a straight path to the
+  side opens they struggle for a moment and then dash off the board (10
+  points) – whatever hung only from them falls. Next to an Angry they
+  panic and bolt as soon as a way opens. They still match with their
+  family. Runners only move while you aim, never while a shot flies.
 - Every fifth shot the ceiling – and the whole board with it – comes down
   one row. The pips at the top count down to the next drop.
 - Clear the board to win. If any creature reaches the dashed danger line,
@@ -355,9 +359,9 @@ prefix is `config::ENV_PREFIX` (`RUST_A_MOVE` here):
 - In Prioritize gameplay, motion in the video is only as smooth as the
   display's frame rate: at 30 Hz every picture is shown twice. The file is
   60 fps either way.
-- Runners do not escape in the game yet (M5). On the shooting range a
-  direct hit on an Angry only uses up the shot.
-- Five hand-made levels at 8 columns; every other level and width is
+- On the shooting range a direct hit on an Angry only uses up the shot,
+  and runners stay put; both work in the game.
+- Seven hand-made levels at 8 columns; every other level and width is
   generated. Generated boards are valid and connected, not proven solvable.
 - Rust a move builds against a patched copy of miniquad 0.4.11 in `vendor/`
   that fixes black text rectangles (macroquad#1006); see

@@ -79,8 +79,19 @@ Commit `1a4184d`.
 | Reduced flashes judged by a person; blast and chain sounds heard | **NOT RUN** |
 | Whether chains feel rewarding and the smile is noticeable at normal speed | **NOT RUN** (playtest) |
 
+## M5 – Runners
+
+| Check | Result |
+| --- | --- |
+| fmt, clippy, tests (174), vendored check, build with Rust 1.87 | PASS |
+| Runner tests E01–E12 and E14 (E13, pause, is the framework's: no `update` while paused) | PASS |
+| `scripts/runner_tour.txt` on the real display (Prioritize gameplay): levels 1–6 won in a row with exactly the scores the tick-exact simulation predicted (… 180, 220); level-6 video saved (1080×1920, 60/1 fps, AAC of equal length, 14.5 s) | PASS |
+| Level 5: once matches clear its left side, the runner leans towards the exit, then squashes and dashes off left with speed lines; +10 points | PASS (screenshots every 6 frames) |
+| Level 6: the runner next to the Angry shows panic while boxed in; when a match pops the triangles beside it, it bolts right on the first aiming tick; the Angry that only hung from it falls without exploding; level won | PASS (screenshots) |
+| Escape sound heard; whether waiting runners pressure the player in a fun way | **NOT RUN** (playtest; OPEN product question) |
+
 ## Not yet verifiable
 
-Runner escapes in the game (M5); level progression,
+Level progression,
 tutorial and quality settings (M6); full recording-mode and platform review
 (M7).

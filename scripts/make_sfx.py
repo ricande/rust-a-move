@@ -90,6 +90,8 @@ def main():
     # Blast: a puff of noise over a dropping boom.
     write("blast.wav", mix(noise(0.45, 0.7, 1.6, seed=6, smooth=0.5), tone(160, 40, 0.45, 0.8, "sine", 1.8)))
     # Chain accent: a shorter, higher crack for the later waves.
+    # Escape: a quick rising squeak and a whoosh.
+    write("escape.wav", concat(tone(500, 1400, 0.07, 0.5, "tri", 1.2), mix(tone(1400, 900, 0.12, 0.25, "sine", 2.0), noise(0.12, 0.2, 2.0, seed=8, smooth=0.7))))
     write("chain.wav", mix(noise(0.18, 0.6, 2.2, seed=7, smooth=0.3), tone(320, 120, 0.18, 0.5, "tri", 2.0)))
 
 
