@@ -466,17 +466,44 @@ pub fn draw_collider(v: &View, centre: Vec2, r: f32) {
     v.line(centre - vec2(0.0, 4.0), centre + vec2(0.0, 4.0), 1.0, c);
 }
 
-/// Fragments per removed creature (to be capped by visual quality, M6).
-const DEBRIS_PIECES: u64 = 7;
+/// How much decoration the effects draw. Never changes the rules or an
+/// essential cue (fear, runner, silhouette, pressure), only fragments.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Quality {
+    #[default]
+    Normal,
+    Low,
+}
+
+impl Quality {
+    /// Fragments per removed creature.
+    fn pieces(self) -> u64 {
+        match self {
+            Quality::Normal => 7,
+            Quality::Low => 3,
+        }
+    }
+}
 
 /// Fragments flying out of a popped or blasted creature, `t` seconds after
 /// it went. Deterministic from `seed`.
-pub fn draw_debris(v: &View, centre: Vec2, r: f32, color: Color, t: f32, life: f32, seed: u64) {
+/// `time` is (seconds since it went, lifetime).
+pub fn draw_debris(
+    v: &View,
+    centre: Vec2,
+    r: f32,
+    color: Color,
+    time: (f32, f32),
+    seed: u64,
+    quality: Quality,
+) {
+    let (t, life) = time;
     if t < 0.0 || t > life {
         return;
     }
     let fade = 1.0 - t / life;
-    for i in 0..DEBRIS_PIECES {
+    for i in 0..quality.pieces() {
         let a = hash01(seed, i * 3) * std::f32::consts::TAU;
         let speed = (2.5 + 3.5 * hash01(seed, i * 3 + 1)) * r;
         let size = (0.12 + 0.14 * hash01(seed, i * 3 + 2)) * r * (0.4 + 0.6 * fade);

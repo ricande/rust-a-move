@@ -318,6 +318,27 @@ pub fn generate(layout: Layout, number: u32, seed: u64) -> Board {
 pub enum Source {
     Curated(String),
     Generated,
+    /// The generator's result failed its checks; a simple known board.
+    Fallback,
+}
+
+/// A usable start: enough creatures, all hanging from the ceiling, clear
+/// of the danger line.
+fn valid_start(b: &Board) -> bool {
+    b.count() > b.layout.columns as usize && b.anchored().len() == b.count() && !b.reaches_danger()
+}
+
+/// Three full rows of ordinary creatures in a fixed pattern: valid at every
+/// supported width and zoom (tested).
+pub fn fallback(layout: Layout) -> Board {
+    let mut b = Board::new(layout);
+    for row in 0..3u16 {
+        for col in 0..layout.row_len(row) {
+            let f = FAMILIES[((col / 2) as usize + row as usize) % 4];
+            b.place(Cell::new(row, col), Kind::Ordinary(f), false);
+        }
+    }
+    b
 }
 
 /// The board, rules and seed for level `number` on `layout`. The seed
@@ -339,12 +360,13 @@ pub fn level_board(layout: Layout, number: u32) -> (Board, Rules, u64, Source) {
     let seed = super::emotion::splitmix(
         number as u64 ^ (layout.columns as u64) << 32 ^ ((layout.zoom * 1000.0) as u64) << 40,
     );
-    (
-        generate(layout, number, seed),
-        rules,
-        seed,
-        Source::Generated,
-    )
+    let board = generate(layout, number, seed);
+    if valid_start(&board) {
+        (board, rules, seed, Source::Generated)
+    } else {
+        // Never expected; a known valid board rather than a broken start.
+        (fallback(layout), rules, seed, Source::Fallback)
+    }
 }
 
 #[cfg(test)]
@@ -386,6 +408,31 @@ mod tests {
             (0, 1, 1, 1)
         );
         assert!(curated(8, 0).is_none());
+    }
+
+    #[test]
+    fn the_fallback_board_is_valid_everywhere() {
+        for columns in super::super::geometry::MIN_COLUMNS..=super::super::geometry::MAX_COLUMNS {
+            for zoom in [75u32, 80, 85, 90, 95, 100] {
+                let l = Layout::new(columns, zoom as f64 / 100.0).unwrap();
+                assert!(valid_start(&fallback(l)), "{columns} {zoom}");
+            }
+        }
+    }
+
+    /// Every width and zoom the setup screen offers gets a valid first board.
+    #[test]
+    fn every_setting_gets_a_valid_board() {
+        for columns in super::super::geometry::MIN_COLUMNS..=super::super::geometry::MAX_COLUMNS {
+            for zoom in [75u32, 80, 85, 90, 95, 100] {
+                let l = Layout::new(columns, zoom as f64 / 100.0).unwrap();
+                for number in [1, 3, 5, 9] {
+                    let (b, _, _, source) = level_board(l, number);
+                    assert!(valid_start(&b), "{columns} {zoom} {number}");
+                    assert_ne!(source, Source::Fallback, "the generator suffices");
+                }
+            }
+        }
     }
 
     #[test]

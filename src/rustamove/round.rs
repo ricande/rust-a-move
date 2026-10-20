@@ -161,8 +161,7 @@ pub struct Round {
     pub board: Board,
     pub rules: Rules,
     pub level: u32,
-    /// Where the board came from and its seed: kept to reproduce a round.
-    #[allow(dead_code)]
+    /// Where the board came from (its hint) and its seed.
     pub source: Source,
     #[allow(dead_code)]
     pub seed: u64,
@@ -184,6 +183,8 @@ pub struct Round {
     pub reduced_motion: bool,
     /// A ring and colour pulse instead of a white flash.
     pub reduced_flashes: bool,
+    /// How many fragments effects draw.
+    pub quality: render::Quality,
     actors: Vec<Actor>,
     /// Sounds due at a later tick (blast waves, falls).
     scheduled: Vec<(u64, Sfx)>,
@@ -230,6 +231,7 @@ impl Round {
             end: None,
             reduced_motion,
             reduced_flashes: false,
+            quality: render::Quality::Normal,
             actors: Vec::new(),
             scheduled: Vec::new(),
             dropped_at: None,
@@ -913,7 +915,7 @@ impl Round {
                     render::draw_creature(v, a.from, r, a.kind, a.runner, &pose, 1.0);
                 } else {
                     let c = render::body_color(a.kind);
-                    render::draw_debris(v, a.from, r, c, since - pop, 0.3, a.seed);
+                    render::draw_debris(v, a.from, r, c, (since - pop, 0.3), a.seed, self.quality);
                 }
             }
             Act::Fall { at, vx } => {
@@ -989,7 +991,7 @@ impl Round {
                 } else {
                     let life = tick(self.rules.blast_present_ticks);
                     let c = render::body_color(a.kind);
-                    render::draw_debris(v, a.from, r, c, since, life, a.seed);
+                    render::draw_debris(v, a.from, r, c, (since, life), a.seed, self.quality);
                     if source {
                         render::draw_blast(v, a.from, r, since, life, self.reduced_flashes);
                     }
@@ -1044,10 +1046,29 @@ impl Round {
             v.text_centered(title, FIELD_W / 2.0, 455.0, 38.0, colour);
             let s = t!("round.final", score = self.score);
             v.text_centered(&s, FIELD_W / 2.0, 500.0, 24.0, TEXT);
+        } else if let Some(hint) = self.hint().filter(|_| self.shots == 0) {
+            // The level's lesson, until the first shot.
+            v.text_wrapped_centered(hint, 900.0, 16.0, ACCENT);
         } else {
             let help = with_alpha(TEXT, 0.55);
             v.text_wrapped_centered(t!("round.help"), 922.0, 14.0, help);
         }
+    }
+
+    /// A curated level's short lesson, in words for what the player sees.
+    pub fn hint(&self) -> Option<&'static str> {
+        let Source::Curated(id) = &self.source else {
+            return None;
+        };
+        Some(match id.as_str() {
+            "first-grin" => t!("hint.first-grin"),
+            "off-the-wall" => t!("hint.off-the-wall"),
+            "angry-neighbours" => t!("hint.angry-neighbours"),
+            "chain-reaction" => t!("hint.chain-reaction"),
+            "runner-intro" => t!("hint.runner-intro"),
+            "runner-panic" => t!("hint.runner-panic"),
+            _ => return None,
+        })
     }
 }
 
@@ -1590,6 +1611,22 @@ mod tests {
         r.board.remove(c(0, 2));
         assert_eq!(tick_until_gone(&mut r, c(0, 3), 89), None);
         assert_eq!(tick_until_gone(&mut r, c(0, 3), 1), Some(1));
+    }
+
+    /// Each taught level has its hint until the first shot; generated
+    /// boards have none.
+    #[test]
+    fn taught_levels_have_hints() {
+        for level in 1..=6 {
+            let r = Round::new(level, Layout::new(8, 1.0).unwrap(), false);
+            assert!(r.hint().is_some(), "level {level}");
+        }
+        assert!(Round::new(9, Layout::new(8, 1.0).unwrap(), false)
+            .hint()
+            .is_none());
+        assert!(Round::new(1, Layout::new(12, 1.0).unwrap(), false)
+            .hint()
+            .is_none());
     }
 
     /// The first runner levels start with the runner boxed in: nothing

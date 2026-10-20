@@ -2,7 +2,7 @@
 
 Normative prototype rules for Rust a move. CONFIRMED mechanics and PROPOSED defaults are classified in [game/01_DECISIONS.md](game/01_DECISIONS.md). All numbers referenced here are supplied by [game/05_CONFIGURATION_CONTENT.md](game/05_CONFIGURATION_CONTENT.md). Geometry and implementation detail: [game/03_TECHNICAL_DESIGN.md](game/03_TECHNICAL_DESIGN.md); characters and animation: [game/04_CHARACTERS_ANIMATION.md](game/04_CHARACTERS_ANIMATION.md).
 
-**Implementation status:** M5. Every rule R01–R14 is in the classic round: aiming by fear, matching, falls, score, Angry blasts with chain reactions (radius 1, levels may set 1–3), nervous neighbours, runners that struggle and escape (with panic next to an Angry), ceiling pressure, danger line, blocked boards, the ending hold, win/loss and Retry, reduced motion and reduced flashes. Content, onboarding and options polish follow in M6. Framework behaviour (pause with Esc/P, results, recording) is described in the README.
+**Implementation status:** M5. Every rule R01–R14 is in the classic round: aiming by fear, matching, falls, score, Angry blasts with chain reactions (radius 1, levels may set 1–3), nervous neighbours, runners that struggle and escape (with panic next to an Angry), ceiling pressure, danger line, blocked boards, the ending hold, win/loss and Retry, reduced motion and reduced flashes. M6 adds the setup screen's live board preview, an effects-quality option, a How to play page and a hint on each teaching level. The full recording and platform review is M7. Framework behaviour (pause with Esc/P, results, recording) is described in the README.
 
 ## R01 — Objective and board
 

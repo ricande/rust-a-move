@@ -41,8 +41,8 @@ Work in progress, built milestone by milestone
 | M3 | Matching, falls, score, ceiling pressure, win/lose and retry | done |
 | M4 | Angry blasts and chain reactions | done |
 | M5 | Runners | done |
-| M6 | Levels, saved options, tutorial | next |
-| M7 | Recording and platform review, release candidate | planned |
+| M6 | Levels, saved options, tutorial | done |
+| M7 | Recording and platform review, release candidate | next |
 
 Today the game is playable: match three or more, drop hanging clusters,
 blow up Angry creatures and set off chain reactions, watch runners escape,
@@ -90,8 +90,12 @@ the animation lab.
 Space or Enter start; or the mouse (click the left or right half of a
 setting to lower or raise it). **Play** starts the level. **Width** sets the
 number of creatures in a long row (6–18) and with it their size; **Zoom**
-(75–100 %) scales the whole board. Both, **Reduced motion** and **Reduced
-flashes** (blasts without the white flash) are saved for the next rounds. Esc or P pauses in every mode.
+(75–100 %) scales the whole board. The next board is shown dimmed behind
+the menu, so you see what they do. **Reduced motion**, **Reduced flashes**
+(blasts without the white flash) and **Effects** (fewer fragments) never
+change the rules. Everything is saved for the next rounds. **How to play**
+explains the game on one page, and each teaching level shows a one-line
+hint until your first shot. Esc or P pauses in every mode.
 
 **Playing**
 

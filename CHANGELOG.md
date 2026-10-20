@@ -73,6 +73,12 @@ All notable changes to Rust a move are documented here.
   in generated levels from level 5. `scripts/runner_tour.txt` and a
   tick-exact tour simulation.
 
+- **Setup and onboarding (M6):** the next board is previewed, dimmed,
+  behind the setup menu and follows width and zoom; an Effects option
+  (normal / fewer fragments); a How to play page; a one-line hint on each
+  teaching level until the first shot; a known valid fallback board for
+  the generator. `scripts/setup_tour.txt`.
+
 ### Removed
 
 - The template's example game and its assets (`paw.png`, `chime.wav`).

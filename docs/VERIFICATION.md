@@ -90,8 +90,17 @@ Commit `1a4184d`.
 | Level 6: the runner next to the Angry shows panic while boxed in; when a match pops the triangles beside it, it bolts right on the first aiming tick; the Angry that only hung from it falls without exploding; level won | PASS (screenshots) |
 | Escape sound heard; whether waiting runners pressure the player in a fun way | **NOT RUN** (playtest; OPEN product question) |
 
+## M6 – Content and complete setup
+
+| Check | Result |
+| --- | --- |
+| fmt, clippy, tests (180), vendored check, build with Rust 1.87 | PASS |
+| Every offered width (6–18) and zoom (75–100 % in 5 % steps) gets a valid first board; the fallback board is valid everywhere; corrupt, out-of-range and newer options files give defaults with a warning and are never rewritten by reading | PASS |
+| `scripts/setup_tour.txt` on the real display in English and Swedish: the dimmed preview changes with 8 → 18 columns, zoom 75 % (narrower board) and 6 columns; Effects: fewer; How to play readable over the dimmed board; the level-1 hint at the bottom until the first shot; options file written with the chosen values | PASS |
+| Same tour in Swedish in a 1000 × 640 window: letterboxed, all texts fit | PASS |
+| A tour script mistake (one Down too many) was caught by checking the saved options file | fixed |
+| Whether the hints teach well and the help page is enough for a new player | **NOT RUN** (needs a person) |
+
 ## Not yet verifiable
 
-Level progression,
-tutorial and quality settings (M6); full recording-mode and platform review
-(M7).
+Full recording-mode and platform review, release candidate (M7).

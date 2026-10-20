@@ -1,0 +1,74 @@
+# Tour of the setup screen (M6): the dimmed preview of the next board at
+# 18 and 6 columns and zoom 75 %, effects quality, the How to play page,
+# and the first level's hint; then abort. Run it in English and with
+# RUST_A_MOVE_LANG=sv, with temp folders (see docs/DEVELOPMENT.md):
+#   RUST_A_MOVE_SCRIPT=scripts/setup_tour.txt RUST_A_MOVE_SHOTS=/tmp/ram/shots \
+#   RUST_A_MOVE_DATA_DIR=/tmp/ram/data RUST_A_MOVE_VIDEO_DIR=/tmp/ram/videos cargo run --release
+
+5     click 270 526   # Play
+20    shot s01-setup
+21    key down        # Width
+22    key right
+23    key right
+24    key right
+25    key right
+26    key right
+27    key right
+28    key right
+29    key right
+30    key right
+31    key right
+41    shot s02-width-18
+42    key down        # Zoom
+43    key left
+44    key left
+45    key left
+46    key left
+47    key left
+57    shot s03-zoom-75
+58    key up          # Width
+59    key left
+60    key left
+61    key left
+62    key left
+63    key left
+64    key left
+65    key left
+66    key left
+67    key left
+68    key left
+69    key left
+70    key left
+80    shot s04-width-6
+81    key right
+82    key right
+83    key down        # Zoom
+84    key right
+85    key right
+86    key right
+87    key right
+88    key right
+89    key down
+90    key down
+91    key down
+92    key space       # Effects: fewer
+102   shot s05-effects-fewer
+103   key down        # How to play
+104   key space
+114   shot s06-help
+115   key space       # back
+125   shot s07-back
+126   key up
+127   key up
+128   key up
+129   key up
+130   key up
+131   key up
+132   key space       # Play level 1 at 8 columns, 100 %
+162   shot s08-level1-hint
+163   key esc
+173   click 270 550   # Abort round
+233   shot s09-aborted
+234   click 388 586   # Discard video
+254   click 270 726   # Main menu
+264   quit

@@ -162,7 +162,42 @@ const TEXTS: &[Text] = &[
     ("setup.motion_on", "Reduced motion: on", "Mindre rörelse: på"),
     ("setup.flashes_off", "Reduced flashes: off", "Mindre blixtar: av"),
     ("setup.flashes_on", "Reduced flashes: on", "Mindre blixtar: på"),
+    ("setup.quality_normal", "Effects: normal", "Effekter: normala"),
+    ("setup.quality_low", "Effects: fewer", "Effekter: färre"),
+    ("setup.how_to", "How to play", "Så spelar du"),
     ("setup.range", "Shooting range (test)", "Skjutbana (test)"),
+    ("help.title", "How to play", "Så spelar du"),
+    (
+        "help.fear",
+        "There is no aiming line. Aim with the mouse or Left/Right: the creature your shot would hit first looks terrified. Click or press Space to fire.",
+        "Det finns ingen siktlinje. Sikta med musen eller Vänster/Höger: figuren som skottet skulle träffa först ser livrädd ut. Klicka eller tryck Mellanslag för att skjuta.",
+    ),
+    (
+        "help.match",
+        "Shots bounce off the walls and stick to what they hit. Three or more of a kind disappear; whatever no longer hangs from the ceiling falls.",
+        "Skotten studsar mot väggarna och fastnar där de träffar. Tre eller fler av samma sort försvinner; det som inte längre hänger i taket rasar.",
+    ),
+    (
+        "help.angry",
+        "The jagged red Angry never shows fear and hides what is behind it. Hit it directly and it explodes with its neighbours; other Angry ones in the blast go off too.",
+        "Den taggiga röda Arga visar aldrig rädsla och döljer det som är bakom den. Träffa den direkt så exploderar den med sina grannar; andra Arga i smällen exploderar också.",
+    ),
+    (
+        "help.runner",
+        "Runners wear a sweatband. When a straight way to the side opens they struggle free and escape; next to an Angry they bolt at once.",
+        "Rymmare har pannband. När en rak väg åt sidan öppnas kämpar de sig loss och flyr; bredvid en Arg sticker de direkt.",
+    ),
+    (
+        "help.ceiling",
+        "Every fifth shot the ceiling comes down one row. The dots at the top count down.",
+        "Var femte skott sjunker taket en rad. Prickarna överst räknar ner.",
+    ),
+    (
+        "help.end",
+        "Clear the board to win. If anything reaches the dashed line at the bottom, or a shot finds no room, the level is lost.",
+        "Töm brädet för att vinna. Når något den streckade linjen längst ner, eller hittar ett skott ingen plats, är nivån förlorad.",
+    ),
+    ("help.close", "Any key or click: back", "Valfri tangent eller klick: tillbaka"),
     ("setup.lab", "Animation lab", "Animationsverkstad"),
     (
         "setup.help",
@@ -183,6 +218,36 @@ const TEXTS: &[Text] = &[
         "setup.save_failed",
         "Could not save the game options: {error}",
         "Kunde inte spara spelinställningarna: {error}",
+    ),
+    (
+        "hint.first-grin",
+        "The one you would hit looks scared. Three of a kind disappear.",
+        "Den du skulle träffa ser rädd ut. Tre av samma sort försvinner.",
+    ),
+    (
+        "hint.off-the-wall",
+        "Bounce shots off the walls. Every fifth shot the ceiling comes down.",
+        "Studsa skotten mot väggarna. Var femte skott sjunker taket.",
+    ),
+    (
+        "hint.angry-neighbours",
+        "Angry never looks scared. Hit it directly and it blows up its neighbours.",
+        "Arg ser aldrig rädd ut. Träffa den direkt så spränger den grannarna.",
+    ),
+    (
+        "hint.chain-reaction",
+        "An Angry caught in a blast explodes too.",
+        "En Arg som hamnar i en smäll exploderar också.",
+    ),
+    (
+        "hint.runner-intro",
+        "Sweatband: a runner. Open a straight way to the side and it escapes.",
+        "Pannband: en rymmare. Öppna en rak väg åt sidan så flyr den.",
+    ),
+    (
+        "hint.runner-panic",
+        "Next to an Angry, a runner bolts the moment a way opens.",
+        "Bredvid en Arg sticker rymmaren så fort en väg öppnas.",
     ),
     ("round.level", "Level {level}", "Nivå {level}"),
     ("round.score", "Score {score}", "Poäng {score}"),
@@ -244,24 +309,28 @@ enum Row {
     Zoom,
     Motion,
     Flashes,
+    Quality,
+    Help,
     Range,
     Lab,
 }
 
-const ROWS: [Row; 7] = [
+const ROWS: [Row; 9] = [
     Row::Play,
     Row::Columns,
     Row::Zoom,
     Row::Motion,
     Row::Flashes,
+    Row::Quality,
+    Row::Help,
     Row::Range,
     Row::Lab,
 ];
 
 /// Where each setup row is, shared by input and drawing.
 fn row_rect(i: usize) -> Rect {
-    let gap = if i >= 5 { 20.0 } else { 0.0 };
-    Rect::new(110.0, 320.0 + i as f32 * 60.0 + gap, 320.0, 50.0)
+    let gap = if i >= 6 { 14.0 } else { 0.0 };
+    Rect::new(110.0, 296.0 + i as f32 * 52.0 + gap, 320.0, 44.0)
 }
 
 struct Setup {
@@ -270,6 +339,26 @@ struct Setup {
     /// Options have been read (once, at the first input).
     loaded: bool,
     warning: Option<Warning>,
+    /// The "How to play" page is open.
+    help: bool,
+    /// The next round's board with the chosen width and zoom, shown dimmed
+    /// behind the menu; rebuilt when they change.
+    preview: Option<board::Board>,
+}
+
+impl Setup {
+    fn refresh_preview(&mut self, level: u32) {
+        let o = &self.options;
+        let current = self
+            .preview
+            .as_ref()
+            .is_some_and(|b| b.layout.columns == o.columns && b.layout.zoom == o.zoom());
+        if !current {
+            self.preview = geometry::Layout::new(o.columns, o.zoom())
+                .ok()
+                .map(|l| content::level_board(l, level).0);
+        }
+    }
 }
 
 enum Mode {
@@ -307,6 +396,8 @@ impl RustAMove {
                 options: Options::default(),
                 loaded: false,
                 warning: None,
+                help: false,
+                preview: None,
             }),
             pending: Vec::new(),
             click: None,
@@ -346,11 +437,10 @@ impl RustAMove {
                     geometry::Layout::new(options.columns, options.zoom()).unwrap_or_else(|_| {
                         geometry::Layout::new(8, 1.0).expect("the default layout is valid")
                     });
-                {
-                    let mut round = round::Round::new(self.level, layout, options.reduced_motion);
-                    round.reduced_flashes = options.reduced_flashes;
-                    Mode::Play(Box::new(round))
-                }
+                let mut round = round::Round::new(self.level, layout, options.reduced_motion);
+                round.reduced_flashes = options.reduced_flashes;
+                round.quality = options.visual_quality;
+                Mode::Play(Box::new(round))
             }
             Row::Range => {
                 let mut r = range::Range::new(self.level, self.dev);
@@ -365,10 +455,38 @@ impl RustAMove {
         };
     }
 
+    /// Changes the setting in `row` by `step` (toggles for on/off rows).
+    fn change(options: &mut Options, row: Row, step: i32) {
+        match row {
+            Row::Columns => options.step_columns(step),
+            Row::Zoom => options.step_zoom(step),
+            Row::Motion => options.reduced_motion ^= true,
+            Row::Flashes => options.reduced_flashes ^= true,
+            Row::Quality => {
+                options.visual_quality = match options.visual_quality {
+                    render::Quality::Normal => render::Quality::Low,
+                    render::Quality::Low => render::Quality::Normal,
+                }
+            }
+            _ => {}
+        }
+    }
+
     fn update_setup(&mut self) {
+        let level = self.level;
         let Mode::Setup(setup) = &mut self.mode else {
             return;
         };
+        // The help page closes on any key or click.
+        if setup.help {
+            if !self.pending.is_empty() || self.click.is_some() {
+                setup.help = false;
+            }
+            self.pending.clear();
+            self.click = None;
+            setup.refresh_preview(level);
+            return;
+        }
         let mut chosen = None;
         let n = ROWS.len();
         for key in std::mem::take(&mut self.pending) {
@@ -376,20 +494,17 @@ impl RustAMove {
             match key {
                 Key::Up => setup.focus = (setup.focus + n - 1) % n,
                 Key::Down => setup.focus = (setup.focus + 1) % n,
-                Key::Left | Key::Right => {
-                    let step = if key == Key::Left { -1 } else { 1 };
-                    match row {
-                        Row::Columns => setup.options.step_columns(step),
-                        Row::Zoom => setup.options.step_zoom(step),
-                        Row::Motion => setup.options.reduced_motion ^= true,
-                        Row::Flashes => setup.options.reduced_flashes ^= true,
-                        _ => {}
-                    }
-                }
+                Key::Left | Key::Right => Self::change(
+                    &mut setup.options,
+                    row,
+                    if key == Key::Left { -1 } else { 1 },
+                ),
                 Key::Space | Key::Enter => match row {
-                    Row::Motion => setup.options.reduced_motion ^= true,
-                    Row::Flashes => setup.options.reduced_flashes ^= true,
+                    Row::Motion | Row::Flashes | Row::Quality => {
+                        Self::change(&mut setup.options, row, 1)
+                    }
                     Row::Columns | Row::Zoom => {}
+                    Row::Help => setup.help = true,
                     _ => chosen = Some(row),
                 },
                 _ => {}
@@ -399,52 +514,86 @@ impl RustAMove {
             if let Some(i) = (0..n).find(|&i| row_rect(i).contains(p)) {
                 setup.focus = i;
                 let right_half = p.x >= row_rect(i).center().x;
-                let step = if right_half { 1 } else { -1 };
                 match ROWS[i] {
-                    Row::Columns => setup.options.step_columns(step),
-                    Row::Zoom => setup.options.step_zoom(step),
-                    Row::Motion => setup.options.reduced_motion ^= true,
-                    Row::Flashes => setup.options.reduced_flashes ^= true,
+                    row
+                    @ (Row::Columns | Row::Zoom | Row::Motion | Row::Flashes | Row::Quality) => {
+                        Self::change(&mut setup.options, row, if right_half { 1 } else { -1 })
+                    }
+                    Row::Help => setup.help = true,
                     row => chosen = Some(row),
                 }
             }
         }
+        setup.refresh_preview(level);
         if let Some(row) = chosen {
             let options = setup.options;
             self.start(row, options);
         }
     }
 
+    /// The next board, dimmed: shows what width and zoom do.
+    fn draw_preview(&self, v: &View, board: &board::Board) {
+        let l = board.layout;
+        range::draw_frame(v, &l);
+        let r = l.r as f32;
+        for (cell, c) in board.occupied() {
+            let p = l.centre(cell);
+            let pose = emotion::base_face(c.kind);
+            render::draw_creature(
+                v,
+                Vec2::new(p.x as f32, p.y as f32),
+                r,
+                c.kind,
+                c.runner,
+                &pose,
+                0.22,
+            );
+        }
+        crate::view::dim(v, 0.35);
+    }
+
     fn draw_setup(&self, v: &View, setup: &Setup) {
-        v.text_centered(crate::config::APP_NAME, FIELD_W / 2.0, 170.0, 64.0, NEON);
-        v.text_centered(t!("menu.subtitle"), FIELD_W / 2.0, 214.0, 22.0, TEXT);
+        if let Some(b) = &setup.preview {
+            self.draw_preview(v, b);
+        }
+        if setup.help {
+            crate::view::dim(v, 0.6);
+            self.draw_help(v);
+            return;
+        }
+        v.text_centered(crate::config::APP_NAME, FIELD_W / 2.0, 150.0, 64.0, NEON);
+        v.text_centered(t!("menu.subtitle"), FIELD_W / 2.0, 192.0, 22.0, TEXT);
         v.text_centered(
             &t!("setup.level", level = self.level),
             FIELD_W / 2.0,
-            280.0,
+            252.0,
             28.0,
             ACCENT,
         );
         let o = &setup.options;
+        let onoff =
+            |on: bool, yes: &'static str, no: &'static str| if on { yes } else { no }.to_owned();
         for (i, row) in ROWS.iter().enumerate() {
             let label = match row {
                 Row::Play => t!("setup.play").to_owned(),
                 Row::Columns => t!("setup.columns", n = o.columns),
                 Row::Zoom => t!("setup.zoom", percent = o.board_zoom),
-                Row::Motion => {
-                    if o.reduced_motion {
-                        t!("setup.motion_on").to_owned()
-                    } else {
-                        t!("setup.motion_off").to_owned()
-                    }
-                }
-                Row::Flashes => {
-                    if o.reduced_flashes {
-                        t!("setup.flashes_on").to_owned()
-                    } else {
-                        t!("setup.flashes_off").to_owned()
-                    }
-                }
+                Row::Motion => onoff(
+                    o.reduced_motion,
+                    t!("setup.motion_on"),
+                    t!("setup.motion_off"),
+                ),
+                Row::Flashes => onoff(
+                    o.reduced_flashes,
+                    t!("setup.flashes_on"),
+                    t!("setup.flashes_off"),
+                ),
+                Row::Quality => onoff(
+                    o.visual_quality == render::Quality::Low,
+                    t!("setup.quality_low"),
+                    t!("setup.quality_normal"),
+                ),
+                Row::Help => t!("setup.how_to").to_owned(),
                 Row::Range => t!("setup.range").to_owned(),
                 Row::Lab => t!("setup.lab").to_owned(),
             };
@@ -457,9 +606,31 @@ impl RustAMove {
                 Warning::Unreadable | Warning::Invalid => t!("setup.warn_invalid"),
                 Warning::NewerVersion => t!("setup.warn_newer"),
             };
-            v.text_wrapped_centered(text, 820.0, 15.0, ERROR);
+            v.text_wrapped_centered(text, 808.0, 15.0, ERROR);
         }
-        v.text_wrapped_centered(t!("setup.help"), 880.0, 15.0, with_alpha(TEXT, 0.7));
+        v.text_wrapped_centered(t!("setup.help"), 872.0, 15.0, with_alpha(TEXT, 0.75));
+    }
+
+    fn draw_help(&self, v: &View) {
+        v.text_centered(t!("help.title"), FIELD_W / 2.0, 120.0, 40.0, NEON);
+        let mut y = 180.0;
+        for text in [
+            t!("help.fear"),
+            t!("help.match"),
+            t!("help.angry"),
+            t!("help.runner"),
+            t!("help.ceiling"),
+            t!("help.end"),
+        ] {
+            y = v.text_wrapped_centered(text, y, 19.0, TEXT) + 18.0;
+        }
+        v.text_centered(
+            t!("help.close"),
+            FIELD_W / 2.0,
+            900.0,
+            17.0,
+            with_alpha(ACCENT, 0.9),
+        );
     }
 }
 
@@ -738,6 +909,67 @@ mod tests {
             g.update(FIXED_DT);
         }
         assert!((lab(&g).time() - 1.0).abs() < 1e-9);
+    }
+
+    /// The help page opens from its row and closes on the next key or
+    /// click, without starting anything.
+    #[test]
+    fn help_opens_and_closes_without_starting() {
+        let mut g = game();
+        g.handle(&click(row_rect(row_index(Row::Help)).center()));
+        g.update(FIXED_DT);
+        assert!(matches!(&g.mode, Mode::Setup(s) if s.help));
+        g.handle(&press(Key::Space));
+        g.update(FIXED_DT);
+        assert!(
+            matches!(&g.mode, Mode::Setup(s) if !s.help),
+            "closed, not started"
+        );
+        let help = row_index(Row::Help);
+        assert!(
+            matches!(&g.mode, Mode::Setup(s) if s.focus == help),
+            "the focus stays on the row"
+        );
+    }
+
+    /// The dimmed preview is exactly the board the round will get, and it
+    /// follows width and zoom.
+    #[test]
+    fn the_preview_is_the_next_board() {
+        let cells = |b: &board::Board| b.occupied().map(|(c, x)| (c, x.kind)).collect::<Vec<_>>();
+        let mut g = RustAMove::with(4, false, None);
+        g.handle(&press(Key::Down)); // Width
+        g.handle(&press(Key::Left));
+        g.update(FIXED_DT);
+        let Mode::Setup(setup) = &g.mode else {
+            panic!()
+        };
+        let preview = setup.preview.clone().unwrap();
+        assert_eq!(preview.layout.columns, 7);
+        g.handle(&press(Key::Up));
+        g.handle(&press(Key::Space));
+        g.update(FIXED_DT);
+        let Mode::Play(r) = &g.mode else { panic!() };
+        assert_eq!(cells(&r.board), cells(&preview));
+        assert_eq!(r.board.layout, preview.layout);
+    }
+
+    #[test]
+    fn effects_quality_is_saved_and_used() {
+        let dir = crate::tests::temp_dir("setup-quality");
+        let path = dir.join("game-settings.json");
+        let mut g = RustAMove::with(1, false, Some(path.clone()));
+        g.handle(&click(row_rect(row_index(Row::Quality)).center()));
+        g.update(FIXED_DT);
+        g.handle(&click(row_rect(row_index(Row::Play)).center()));
+        g.update(FIXED_DT);
+        let Mode::Play(r) = &g.mode else { panic!() };
+        assert_eq!(r.quality, render::Quality::Low);
+        assert_eq!(
+            persistence::load(&path).0.visual_quality,
+            render::Quality::Low
+        );
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]

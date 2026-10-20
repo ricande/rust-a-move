@@ -50,7 +50,7 @@ next to the code in `src/rustamove/`:
 | `emotion` | Blend timings; Angry ignores the aim completely; an aimed nervous neighbour shows more fear; reduced motion keeps the face; poses are pure; blink intervals. |
 | `render` | Shapes stay inside the collider, are star-shaped for the fan fill, and differ per family. |
 | `lab` | Every scenario runs; nervous ring; Angry twins move identically under aim; runner timing (90 ticks, panic on the first); chain blast removes each creature once. |
-| `mod` (game) | Presses apply once in `update`; the setup screen never fires, changes width and zoom, saves on start, and the next round reads the same options and board. |
+| `mod` (game) | Presses apply once in `update`; the setup screen never fires, changes width and zoom, saves on start, and the next round reads the same options and board; the preview is the next board; How to play opens and closes without starting; effects quality is saved and used. |
 
 The framework's own tests (flow including win/loss/retry, settings, translations, recording) use
 their own test game in `src/app.rs`. Tests never touch the user's folders:
@@ -84,6 +84,7 @@ cargo run --release
 
 | Script | What it does |
 | --- | --- |
+| `scripts/setup_tour.txt` | The setup screen: the dimmed preview at 18 and 6 columns and zoom 75 %, Effects, How to play, the level-1 hint; run it also with `RUST_A_MOVE_LANG=sv` and `RUST_A_MOVE_WINDOW=1000x640`. |
 | `scripts/runner_tour.txt` | Plays levels 1–6 in a row with pictures every 6 frames in levels 5–6: a runner escaping once a match frees it, and a panicking runner next to an Angry that bolts the moment a match opens its way. Run it in Prioritize gameplay. |
 | `scripts/blast_tour.txt` | Plays levels 1–4 in a row: matches, the first Angry blast (level 3) and a three-wave chain (level 4) with pictures every two frames around the blasts, then saves the level-4 video. Run it in Prioritize gameplay. |
 | `scripts/play_tour.txt` | A real game: wins level 1 and saves the video, loses level 1 at the danger line and saves that video, Retry (same board), pause and abort. Its angles come from `cargo test tour_angles -- --ignored --nocapture`. Run it in Prioritize gameplay (below). |

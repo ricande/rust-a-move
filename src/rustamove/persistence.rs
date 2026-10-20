@@ -29,6 +29,8 @@ pub struct Options {
     pub reduced_motion: bool,
     /// A ring and colour pulse instead of a white flash in blasts.
     pub reduced_flashes: bool,
+    /// "normal" or "low": how many fragments effects draw.
+    pub visual_quality: super::render::Quality,
 }
 
 impl Default for Options {
@@ -39,6 +41,7 @@ impl Default for Options {
             board_zoom: 100,
             reduced_motion: false,
             reduced_flashes: false,
+            visual_quality: super::render::Quality::Normal,
         }
     }
 }
@@ -164,6 +167,12 @@ mod tests {
             (Options::default(), Some(Warning::NewerVersion))
         );
         // Missing fields default; unknown fields are ignored.
+        let (o, _) = parse(r#"{"visual_quality": "low"}"#);
+        assert_eq!(o.visual_quality, super::super::render::Quality::Low);
+        assert_eq!(
+            parse(r#"{"visual_quality": "ultra"}"#).1,
+            Some(Warning::Invalid)
+        );
         let (o, w) = parse(r#"{"columns": 6, "future": true}"#);
         assert_eq!((o.columns, o.board_zoom, w), (6, 100, None));
     }

@@ -815,7 +815,15 @@ impl Lab {
                     live(pop_pose(a.kind, since.max(0.0)));
                 } else {
                     let c = render::body_color(a.kind);
-                    render::draw_debris(v, a.from, a.r, c, since - POP_LIFE as f32, 0.3, a.seed);
+                    render::draw_debris(
+                        v,
+                        a.from,
+                        a.r,
+                        c,
+                        (since - POP_LIFE as f32, 0.3),
+                        a.seed,
+                        render::Quality::Normal,
+                    );
                 }
             }
             Act::Blasted {
@@ -842,7 +850,15 @@ impl Lab {
                     live(pose);
                 } else {
                     let c = render::body_color(a.kind);
-                    render::draw_debris(v, a.from, a.r, c, since, BLAST_LIFE as f32, a.seed);
+                    render::draw_debris(
+                        v,
+                        a.from,
+                        a.r,
+                        c,
+                        (since, BLAST_LIFE as f32),
+                        a.seed,
+                        render::Quality::Normal,
+                    );
                     if angry_source {
                         render::draw_blast(v, a.from, a.r, since, BLAST_LIFE as f32, false);
                     }
